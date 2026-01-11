@@ -1,0 +1,197 @@
+/* Lynx: clean dark glass UI + map fills screen (iPad Safari friendly) */
+:root{
+  --bg: #070a0f;
+  --glass: rgba(10, 16, 28, 0.62);
+  --glass2: rgba(10, 16, 28, 0.78);
+  --stroke: rgba(255,255,255,0.08);
+  --stroke2: rgba(255,255,255,0.12);
+  --txt: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.62);
+  --chip: rgba(255,255,255,0.06);
+  --chip2: rgba(255,255,255,0.10);
+  --btn: rgba(255,255,255,0.07);
+  --btn2: rgba(255,255,255,0.12);
+  --shadow: 0 18px 60px rgba(0,0,0,0.55);
+}
+
+*{ box-sizing:border-box; }
+html,body,#root{ height:100%; margin:0; background:var(--bg); color:var(--txt); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+button,input,select,textarea{ font:inherit; color:inherit; }
+
+.lynx-shell{ position:relative; height:100%; width:100%; overflow:hidden; }
+#lynx-map{ position:absolute; inset:0; }
+
+.lynx-topbar{
+  position:absolute; left:18px; right:18px; top:14px;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; z-index:20000;
+  pointer-events:none;
+}
+.lynx-topbar .left, .lynx-topbar .mid, .lynx-topbar .right{
+  display:flex; align-items:center; gap:10px; pointer-events:auto;
+}
+.brand{
+  min-width: 220px;
+  padding:14px 16px;
+  border-radius:18px;
+  background:var(--glass);
+  border:1px solid var(--stroke);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow);
+}
+.brand .title{ font-weight:800; letter-spacing:0.22em; font-size:14px; opacity:0.9; }
+.brand .sub{ font-size:12px; color:var(--muted); margin-top:4px; }
+
+.btn{
+  padding:10px 14px;
+  border-radius:14px;
+  background:var(--btn);
+  border:1px solid var(--stroke);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 32px rgba(0,0,0,0.35);
+  cursor:pointer;
+}
+.btn:hover{ background:var(--btn2); border-color:var(--stroke2); }
+.btn:active{ transform: translateY(1px); }
+.btn.primary{ background: rgba(120,170,255,0.12); border-color: rgba(120,170,255,0.22); }
+
+.sidebar{
+  position:absolute; left:18px; top:92px; bottom:18px;
+  width:min(420px, 44vw);
+  z-index:15000;
+  background:var(--glass2);
+  border:1px solid var(--stroke);
+  border-radius:22px;
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+.sidebar.hidden{ display:none; }
+
+.side-head{ padding:16px 16px 12px 16px; border-bottom:1px solid var(--stroke); }
+.side-head .h1{ font-weight:700; letter-spacing:0.08em; font-size:12px; opacity:0.7; }
+.side-head .h2{ font-size:13px; color:var(--muted); margin-top:6px; }
+
+.chips{ display:flex; flex-wrap:wrap; gap:8px; padding:12px 16px; }
+.chip{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 10px;
+  border-radius:999px;
+  background:var(--chip);
+  border:1px solid var(--stroke);
+  cursor:pointer;
+  font-size:12px;
+  color:var(--txt);
+}
+.chip svg{ width:14px; height:14px; opacity:0.9; }
+.chip.active{ background:var(--chip2); border-color:var(--stroke2); }
+
+.feed{ padding:0 12px 12px 12px; overflow:auto; }
+.card{
+  margin:10px 4px;
+  padding:14px 14px 12px 14px;
+  border-radius:18px;
+  border:1px solid var(--stroke);
+  background: rgba(0,0,0,0.22);
+}
+.card .row{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.card .k{ font-weight:800; letter-spacing:0.02em; font-size:16px; }
+.card .meta{ margin-top:6px; font-size:12px; color:var(--muted); line-height:1.45; }
+.badge{
+  padding:6px 10px;
+  border-radius:999px;
+  background:var(--chip);
+  border:1px solid var(--stroke);
+  font-size:12px;
+  color:var(--muted);
+  white-space:nowrap;
+}
+.actions{ margin-top:10px; display:flex; gap:10px; }
+.actions .btn{ padding:8px 12px; border-radius:12px; }
+
+.ops{
+  position:absolute;
+  right:18px; bottom:18px;
+  z-index:18000;
+  width:min(360px, 42vw);
+  border-radius:22px;
+  border:1px solid var(--stroke);
+  background: rgba(10, 16, 28, 0.78);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow);
+  padding:14px;
+}
+.ops .hdr{ font-weight:800; letter-spacing:0.18em; font-size:12px; opacity:0.8; margin-bottom:10px; }
+.ops .grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.ops .status{ margin-top:10px; font-size:12px; color:var(--muted); line-height:1.35; }
+
+.modal-back{
+  position:absolute; inset:0; z-index:25000;
+  background: rgba(0,0,0,0.55);
+  display:flex; align-items:center; justify-content:center;
+  padding:16px;
+}
+.modal{
+  width:min(980px, 96vw);
+  border-radius:22px;
+  border:1px solid var(--stroke);
+  background: rgba(10, 16, 28, 0.90);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+  overflow:hidden;
+}
+.modal .top{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:16px 18px;
+  border-bottom:1px solid var(--stroke);
+}
+.modal .top .t{ font-weight:900; letter-spacing:0.10em; }
+.modal .body{ padding:16px 18px; display:grid; gap:12px; }
+.grid2{ display:grid; grid-template-columns:1.2fr 0.8fr; gap:12px; }
+.grid3{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.field label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+.field input,.field select,.field textarea{
+  width:100%;
+  padding:12px 12px;
+  border-radius:14px;
+  border:1px solid var(--stroke);
+  background: rgba(0,0,0,0.22);
+  outline:none;
+}
+.field textarea{ min-height:110px; resize:vertical; }
+.modal .foot{
+  display:flex; justify-content:flex-end; gap:10px;
+  padding:14px 18px;
+  border-top:1px solid var(--stroke);
+}
+.toast{
+  position:absolute; left:50%; transform:translateX(-50%);
+  bottom:22px; z-index:26000;
+  background: rgba(0,0,0,0.55);
+  border:1px solid var(--stroke);
+  border-radius:999px;
+  padding:10px 14px;
+  font-size:12px;
+  color:var(--muted);
+  backdrop-filter: blur(12px);
+}
+
+/* Leaflet container must be touch-friendly */
+.leaflet-container{ height:100%; width:100%; background:#0b0f18; }
+.leaflet-control-container{ z-index:12000 !important; }
+
+/* Professional icon marker (no emojis) */
+.lynx-marker{
+  width:34px; height:34px;
+  border-radius:999px;
+  display:flex; align-items:center; justify-content:center;
+  background: rgba(10,16,28,0.78);
+  border:1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 10px 26px rgba(0,0,0,0.55);
+  backdrop-filter: blur(10px);
+}
+.lynx-marker svg{
+  width:18px; height:18px;
+  opacity:0.92;
+}

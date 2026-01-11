@@ -1,0 +1,17 @@
+/* Hide the left feed/panel when toggled */
+html.lynx-hide-panel #panel,
+html.lynx-hide-panel #sidebar,
+html.lynx-hide-panel .sidebar,
+html.lynx-hide-panel .left-panel,
+html.lynx-hide-panel .feed-panel,
+html.lynx-hide-panel .lynx-panel,
+html.lynx-hide-panel aside {
+  display: none !important;
+}
+
+/* Keep Leaflet controls clickable/visible */
+.leaflet-control-container { z-index: 11000 !important; }
+.leaflet-control, .leaflet-top, .leaflet-bottom { z-index: 12000 !important; }
+
+/* Our OPS overlay always on top */
+#lynx-ops-wrap { z-index: 999999 !important; }

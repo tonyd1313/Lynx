@@ -1,0 +1,184 @@
+from __future__ import annotations
+
+import asyncio
+import json
+import time
+import uuid
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel, Field
+
+APP_DIR = Path(__file__).resolve().parent
+DATA_FILE = (APP_DIR.parent / "data" / "entities.json").resolve()
+
+# --- live subscribers (SSE) ---
+SUBS: List[asyncio.Queue] = []
+
+def _now_iso() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime()) + "Z"
+
+def _load() -> List[Dict[str, Any]]:
+    if not DATA_FILE.exists():
+        DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+        DATA_FILE.write_text("[]", encoding="utf-8")
+        return []
+    try:
+        return json.loads(DATA_FILE.read_text(encoding="utf-8") or "[]")
+    except Exception:
+        bad = DATA_FILE.with_suffix(".corrupt.json")
+        bad.write_text(DATA_FILE.read_text(encoding="utf-8"), encoding="utf-8")
+        DATA_FILE.write_text("[]", encoding="utf-8")
+        return []
+
+def _save(items: List[Dict[str, Any]]) -> None:
+    DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+    DATA_FILE.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
+
+ENTITIES: List[Dict[str, Any]] = _load()
+
+# Pydantic v1 compatible (FastAPI often still uses it)
+class EntityIn(BaseModel):
+    # Core
+    type: str
+    title: str
+    description: str
+    lat: float
+    lng: float
+
+    # Optional common
+    severity: Optional[int] = None
+    tags: Optional[List[str]] = None
+    source: Optional[str] = None
+    occurredAt: Optional[str] = None
+    updatedAt: Optional[str] = None
+    links: Optional[List[str]] = None
+    imageUrls: Optional[List[str]] = None
+
+    # Optional structured
+    person: Optional[Dict[str, Any]] = None
+    org: Optional[Dict[str, Any]] = None
+    vehicle: Optional[Dict[str, Any]] = None
+    device: Optional[Dict[str, Any]] = None
+    evidence: Optional[Dict[str, Any]] = None
+    article: Optional[Dict[str, Any]] = None
+    location: Optional[Dict[str, Any]] = None
+
+    # Everything else goes here if agent sends extra keys
+    attributes: Optional[Dict[str, Any]] = None
+
+    class Config:
+        extra = "allow"
+
+app = FastAPI(title="LYNX API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/health")
+def health():
+    return {"ok": True, "count": len(ENTITIES)}
+
+@app.get("/api/entities")
+def get_entities():
+    # newest first
+    return list(reversed(ENTITIES))
+
+async def _broadcast(entity: Dict[str, Any]) -> None:
+    # push to all SSE queues
+    dead = []
+    for q in SUBS:
+        try:
+            q.put_nowait(entity)
+        except Exception:
+            dead.append(q)
+    for q in dead:
+        try:
+            SUBS.remove(q)
+        except ValueError:
+            pass
+
+@app.post("/api/entities", status_code=201)
+async def create_entity(e: EntityIn, request: Request):
+    raw = e.dict(by_alias=True)
+
+    # Collect unknown keys into attributes (including extra fields)
+    known = set(e.__fields__.keys()) if hasattr(e, "__fields__") else set(raw.keys())
+    extras = {}
+    try:
+        # FastAPI includes extras in raw already; we just keep any non-known fields
+        for k, v in raw.items():
+            if k not in known:
+                extras[k] = v
+    except Exception:
+        extras = {}
+
+    attributes = raw.get("attributes") or {}
+    if extras:
+        attributes.update(extras)
+
+    now_iso = _now_iso()
+
+    entity = {
+        "id": f"{raw.get(type,e)}_{uuid.uuid4().hex[:10]}",
+        "type": (raw.get("type") or "note").lower(),
+        "title": raw.get("title") or "Untitled",
+        "description": raw.get("description") or "",
+        "lat": float(raw.get("lat")),
+        "lng": float(raw.get("lng")),
+        "severity": raw.get("severity"),
+        "tags": raw.get("tags") or [],
+        "source": raw.get("source") or "agent",
+        "occurredAt": raw.get("occurredAt") or now_iso,
+        "updatedAt": now_iso,
+        "links": raw.get("links") or [],
+        "imageUrls": raw.get("imageUrls") or [],
+        "person": raw.get("person"),
+        "org": raw.get("org"),
+        "vehicle": raw.get("vehicle"),
+        "device": raw.get("device"),
+        "evidence": raw.get("evidence"),
+        "article": raw.get("article"),
+        "location": raw.get("location"),
+        "attributes": attributes or {},
+    }
+
+    ENTITIES.append(entity)
+    _save(ENTITIES)
+
+    await _broadcast(entity)
+    return JSONResponse(entity)
+
+@app.get("/api/stream")
+async def stream():
+    """
+    SSE stream: emits the NEW entity whenever POST /api/entities happens.
+    Frontend uses EventSource for live pins.
+    """
+    q: asyncio.Queue = asyncio.Queue(maxsize=100)
+    SUBS.append(q)
+
+    async def gen():
+        # initial comment so proxy/browsers open stream immediately
+        yield "retry: 1000\n\n"
+        try:
+            while True:
+                item = await q.get()
+                data = json.dumps(item, ensure_ascii=False)
+                yield f"data: {data}\n\n"
+        except asyncio.CancelledError:
+            pass
+        finally:
+            try:
+                SUBS.remove(q)
+            except ValueError:
+                pass
+
+    return StreamingResponse(gen(), media_type="text/event-stream")

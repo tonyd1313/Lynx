@@ -1,0 +1,684 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import MapView from "./components/MapView";
+
+// --- LYNX_BACKEND_PAYLOAD_MAP_V1 ---
+const LYNX_BACKEND_PIN_KEYS = ["kind", "title", "notes", "lat", "lng", "severity", "attachment_ids"];
+function lynxToBackendPinPayload(d) {
+  const out = {};
+  for (const k of LYNX_BACKEND_PIN_KEYS) {
+    const v = ({
+      "kind": d.type ?? d.category ?? d.kind, "title": (d.title && String(d.title).trim()) || "New Entry", "notes": d.description ?? "", "lat": Number(d.lat ?? d.latitude), "lng": Number(d.lng ?? d.lon ?? d.longitude), "severity": d.severity ?? 2, "attachment_ids": undefined
+    })[k];
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
+
+
+type Pin = {
+  id?: string;
+  category: string;
+  title: string;
+  description?: string;
+  lat?: number;
+  lon?: number;
+  latitude?: number;
+  longitude?: number;
+  severity?: number;
+  tags?: string[];
+  url?: string;
+  image_url?: string;
+  created_at?: string;
+};
+
+const CATS = [
+  "Incident","Suspect","Person","Org","Vehicle","Device","Evidence","Article","Location","Note"
+] as const;
+
+function api(path: string): string {
+  // Relative so Vite proxy works from iPad Safari
+  return path.startsWith("/") ? path : `/${path}`;
+}
+
+async function j<T>(r: Response): Promise<T> {
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  return await r.json() as T;
+}
+
+/** Minimal “lucide-like” SVG icons (stroke only) */
+function Icon({ name, size = 14 }: { name: string; size?: number }) {
+  const common = {
+    width: size, height: size, viewBox: "0 0 24 24",
+    fill: "none", stroke: "currentColor", strokeWidth: 2,
+    strokeLinecap: "round" as const, strokeLinejoin: "round" as const
+  };
+
+  switch (name.toLowerCase()) {
+    case "incident": // alert-triangle
+      return (
+        <svg {...common}>
+          <path d="M10.3 3.3a2 2 0 0 1 3.4 0l8 13.9A2 2 0 0 1 20 20H4a2 2 0 0 1-1.7-2.8z" />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+        </svg>
+      );
+    case "suspect": // user + search
+      return (
+        <svg {...common}>
+          <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
+          <path d="M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
+          <path d="M21 21l-3.2-3.2" />
+          <path d="M18.2 17.8a3.8 3.8 0 1 0-5.4-5.4 3.8 3.8 0 0 0 5.4 5.4z" />
+        </svg>
+      );
+    case "person": // user
+      return (
+        <svg {...common}>
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
+        </svg>
+      );
+    case "org": // building
+      return (
+        <svg {...common}>
+          <path d="M3 21h18" />
+          <path d="M6 21V7a2 2 0 0 1 2-2h3v16" />
+          <path d="M13 21V4h5a2 2 0 0 1 2 2v15" />
+          <path d="M9 9h.01M9 12h.01M9 15h.01" />
+          <path d="M16 9h.01M16 12h.01M16 15h.01" />
+        </svg>
+      );
+    case "vehicle": // car
+      return (
+        <svg {...common}>
+          <path d="M7 17h10" />
+          <path d="M5 17l1-6a4 4 0 0 1 4-3h4a4 4 0 0 1 4 3l1 6" />
+          <path d="M6 17v2" />
+          <path d="M18 17v2" />
+          <path d="M7.5 14h9" />
+        </svg>
+      );
+    case "device": // cpu/router-ish
+      return (
+        <svg {...common}>
+          <rect x="7" y="7" width="10" height="10" rx="2" />
+          <path d="M9 1v3M15 1v3M9 20v3M15 20v3" />
+          <path d="M1 9h3M1 15h3M20 9h3M20 15h3" />
+        </svg>
+      );
+    case "evidence": // paperclip
+      return (
+        <svg {...common}>
+          <path d="M21.4 11.6l-8.5 8.5a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5" />
+        </svg>
+      );
+    case "article": // file-text
+      return (
+        <svg {...common}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <path d="M14 2v6h6" />
+          <path d="M8 13h8" />
+          <path d="M8 17h8" />
+          <path d="M8 9h3" />
+        </svg>
+      );
+    case "location": // map-pin
+      return (
+        <svg {...common}>
+          <path d="M12 21s7-4.4 7-11a7 7 0 0 0-14 0c0 6.6 7 11 7 11z" />
+          <path d="M12 10a2.2 2.2 0 1 0 0-4.4A2.2 2.2 0 0 0 12 10z" />
+        </svg>
+      );
+    case "note": // sticky note
+      return (
+        <svg {...common}>
+          <path d="M21 15V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10" />
+          <path d="M21 15h-6a2 2 0 0 0-2 2v6" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8" />
+        </svg>
+      );
+  }
+}
+
+function markerSvg(category: string): string {
+  // SVG string (for Leaflet divIcon)
+  const stroke = "rgba(255,255,255,0.92)";
+  const base = `width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"`;
+  const c = category.toLowerCase();
+
+  if (c.includes("incident")) return `<svg ${base}><path d="M10.3 3.3a2 2 0 0 1 3.4 0l8 13.9A2 2 0 0 1 20 20H4a2 2 0 0 1-1.7-2.8z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`;
+  if (c.includes("suspect"))  return `<svg ${base}><path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><path d="M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/><path d="M21 21l-3.2-3.2"/><path d="M18.2 17.8a3.8 3.8 0 1 0-5.4-5.4 3.8 3.8 0 0 0 5.4 5.4z"/></svg>`;
+  if (c.includes("person"))   return `<svg ${base}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>`;
+  if (c.includes("org"))      return `<svg ${base}><path d="M3 21h18"/><path d="M6 21V7a2 2 0 0 1 2-2h3v16"/><path d="M13 21V4h5a2 2 0 0 1 2 2v15"/></svg>`;
+  if (c.includes("vehicle"))  return `<svg ${base}><path d="M7 17h10"/><path d="M5 17l1-6a4 4 0 0 1 4-3h4a4 4 0 0 1 4 3l1 6"/><path d="M6 17v2"/><path d="M18 17v2"/></svg>`;
+  if (c.includes("device"))   return `<svg ${base}><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3"/><path d="M1 9h3M1 15h3M20 9h3M20 15h3"/></svg>`;
+  if (c.includes("evidence")) return `<svg ${base}><path d="M21.4 11.6l-8.5 8.5a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>`;
+  if (c.includes("article"))  return `<svg ${base}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M8 9h3"/></svg>`;
+  if (c.includes("location")) return `<svg ${base}><path d="M12 21s7-4.4 7-11a7 7 0 0 0-14 0c0 6.6 7 11 7 11z"/><path d="M12 10a2.2 2.2 0 1 0 0-4.4A2.2 2.2 0 0 0 12 10z"/></svg>`;
+  if (c.includes("note"))     return `<svg ${base}><path d="M21 15V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10"/><path d="M21 15h-6a2 2 0 0 0-2 2v6"/></svg>`;
+
+  return `<svg ${base}><circle cx="12" cy="12" r="8"/></svg>`;
+}
+
+export default function App() {
+  // LYNX_ADD_PIN_FIX
+  // Add Pin: click button -> arm placement -> next map tap opens modal with coords.
+  const addModeRef = React.useRef<boolean>(false);
+  React.useEffect(() => {
+    addModeRef.current = addMode;
+  }, [addMode]);
+
+  const startAddPin = React.useCallback(() => {
+    setAddMode(true);
+    // (Optional) console hint
+    console.log("[LYNX] Add Pin armed: tap map to place pin");
+  }, []);
+
+  const onPlaced = React.useCallback((lat: number, lng: number) => {
+    if (!addModeRef.current) return;
+    setForm((f: any) => ({ ...f, lat: Number(lat), lng: Number(lng) }));
+    setAddOpen(true);
+    setAddMode(false);
+  }, []);
+
+  // Global fallback: MapView dispatches `lynx:mapclick` even if props aren't wired.
+  React.useEffect(() => {
+    const handler = (ev: any) => {
+      const d = ev?.detail || {};
+      const lat = Number(d.lat);
+      const lng = Number(d.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      onPlaced(lat, lng);
+    };
+    window.addEventListener("lynx:mapclick", handler as any);
+    return () => window.removeEventListener("lynx:mapclick", handler as any);
+  }, [onPlaced]);
+
+  React.useEffect(() => {
+    const onAdd = (e: any) => {
+      const lat = Number(e?.detail?.lat);
+      const lng = Number(e?.detail?.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+      // best-effort: setForm if it exists
+      try { (setForm as any)((f: any) => ({ ...f, lat, lng })); } catch {}
+      try { (setAddOpen as any)(true); } catch {}
+    };
+    window.addEventListener("lynx:addpin", onAdd as any);
+    return () => window.removeEventListener("lynx:addpin", onAdd as any);
+  }, []);
+
+  const mapRef = useRef<L.Map | null>(null);
+  const darkRef = useRef<L.TileLayer | null>(null);
+  const satRef  = useRef<L.TileLayer | null>(null);
+  const pinsLayerRef = useRef<L.LayerGroup | null>(null);
+
+  const addModeRef = useRef<boolean>(false);
+
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [pins, setPins] = useState<Pin[]>([]);
+  const [catFilter, setCatFilter] = useState<string>("All");
+  const [toast, setToast] = useState<string>("");
+
+  const [addMode, setAddMode] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+
+  const [form, setForm] = useState({
+    category: "Incident",
+    severity: 2,
+    title: "",
+    description: "",
+    lat: 0,
+    lon: 0,
+    tags: "",
+    url: "",
+    image_url: "",
+  });
+
+  const [mapStyle, setMapStyle] = useState<"dark"|"sat">("dark");
+  const [opsStatus, setOpsStatus] = useState<string>("Ready");
+
+  useEffect(() => {
+    addModeRef.current = addMode;
+  }, [addMode]);
+
+  const filtered = useMemo(() => {
+    const list = pins.slice().reverse();
+    if (catFilter === "All") return list;
+    return list.filter(p => (p.category || "").toLowerCase() === catFilter.toLowerCase());
+  }, [pins, catFilter]);
+
+  function showToast(msg: string, ms = 2200) {
+    setToast(msg);
+    window.setTimeout(() => setToast(""), ms);
+  }
+
+  async function refreshPins() {
+    try {
+      const r = await fetch(api("/api/pins"), { cache: "no-store" });
+      const data = await j<Pin[]>(r);
+      setPins(Array.isArray(data) ? data : []);
+      setOpsStatus(`Pins: ${Array.isArray(data) ? data.length : 0}`);
+    } catch (e: any) {
+      setOpsStatus(`Refresh failed: ${e?.message || e}`);
+      console.error(e);
+    }
+  }
+
+  async function createPin(payload: Partial<Pin>) {
+    const body: any = {
+      category: payload.category,
+      title: payload.title,
+      description: payload.description || "",
+      severity: payload.severity ?? 2,
+      tags: payload.tags || [],
+      url: payload.url || "",
+      image_url: payload.image_url || "",
+    };
+
+    // compatibility: send both lat/lon and latitude/longitude
+    const lat = payload.lat ?? payload.latitude;
+    const lon = payload.lon ?? payload.longitude;
+    if (typeof lat === "number" && typeof lon === "number") {
+      body.lat = lat; body.lon = lon;
+      body.latitude = lat; body.longitude = lon;
+    }
+
+    const r = await fetch(api("/api/pins"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!r.ok) {
+      const t = await r.text().catch(() => "");
+      throw new Error(`POST /api/pins failed: ${r.status} ${r.statusText} ${t}`.trim());
+    }
+  }
+
+  async function submitAdd() {
+    if (!form.title.trim()) { showToast("Title required"); return; }
+    try {
+      await createPin({
+        category: form.category,
+        title: form.title.trim(),
+        description: form.description.trim(),
+        severity: Number(form.severity) || 2,
+        lat: Number(form.lat),
+        lon: Number(form.lon),
+        tags: form.tags.split(",").map(s => s.trim()).filter(Boolean),
+        url: form.url.trim(),
+        image_url: form.image_url.trim(),
+      });
+      setAddOpen(false);
+      showToast("Created");
+      await refreshPins();
+    } catch (e: any) {
+      showToast(`Create failed: ${e?.message || e}`, 3200);
+      console.error(e);
+    }
+  }
+
+  async function localSeed() {
+    try {
+      const m = mapRef.current;
+      const center = m ? m.getCenter() : L.latLng(40.742, -74.168);
+      const baseLat = center.lat, baseLon = center.lng;
+
+      const samples: Partial<Pin>[] = Array.from({ length: 10 }).map((_, i) => {
+        const cat = CATS[i % CATS.length];
+        const dlat = (Math.random() - 0.5) * 0.015;
+        const dlon = (Math.random() - 0.5) * 0.020;
+        return {
+          category: cat,
+          title: `${cat}: Local Seed ${i + 1}`,
+          description: "Local seed to validate posting + UI pipeline.",
+          severity: (i % 5) + 1,
+          lat: baseLat + dlat,
+          lon: baseLon + dlon,
+          tags: ["local-seed"],
+        };
+      });
+
+      for (const s of samples) await createPin(s);
+      showToast("Local Seed posted");
+      await refreshPins();
+    } catch (e: any) {
+      showToast(`Local Seed failed: ${e?.message || e}`, 3200);
+      console.error(e);
+    }
+  }
+
+  async function wipeAll() {
+    if (!confirm("Wipe ALL pins + attachments?")) return;
+    try {
+      const r = await fetch(api("/api/wipe"), { method: "POST" });
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      showToast("Wiped");
+      await refreshPins();
+    } catch (e: any) {
+      showToast(`Wipe failed: ${e?.message || e}`, 3200);
+      console.error(e);
+    }
+  }
+
+  async function pingApi() {
+    try {
+      const r = await fetch(api("/api/pins"), { cache: "no-store" });
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      showToast("API OK");
+    } catch (e: any) {
+      showToast(`API down: ${e?.message || e}`, 3200);
+      console.error(e);
+    }
+  }
+
+  function toggleMapStyle() {
+    const m = mapRef.current;
+    if (!m || !darkRef.current || !satRef.current) return;
+
+    const next = mapStyle === "dark" ? "sat" : "dark";
+    if (next === "sat") {
+      if (m.hasLayer(darkRef.current)) m.removeLayer(darkRef.current);
+      if (!m.hasLayer(satRef.current)) satRef.current.addTo(m);
+    } else {
+      if (m.hasLayer(satRef.current)) m.removeLayer(satRef.current);
+      if (!m.hasLayer(darkRef.current)) darkRef.current.addTo(m);
+    }
+    setMapStyle(next);
+    showToast(next === "sat" ? "Satellite" : "Dark");
+  }
+
+  function focusPin(p: Pin) {
+    const lat = (p.lat ?? p.latitude);
+    const lon = (p.lon ?? p.longitude);
+    if (typeof lat !== "number" || typeof lon !== "number") return;
+    mapRef.current?.flyTo([lat, lon], 16, { duration: 0.6 });
+  }
+
+  // Hide Panel blank fix: invalidate Leaflet size after layout changes (Safari/iPad especially)
+  useEffect(() => {
+    const m = mapRef.current;
+    if (!m) return;
+    const t1 = window.setTimeout(() => m.invalidateSize(true), 60);
+    const t2 = window.setTimeout(() => m.invalidateSize(true), 220);
+    return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
+  }, [sidebarOpen]);
+
+  function toggleSidebar() {
+    setSidebarOpen(v => !v);
+    const m = mapRef.current;
+    if (m) {
+      window.setTimeout(() => m.invalidateSize(true), 60);
+      window.setTimeout(() => m.invalidateSize(true), 220);
+    }
+  }
+
+  // ---- Map init ----
+  useEffect(() => {
+    const el = document.getElementById("lynx-map");
+    if (!el || mapRef.current) return;
+
+    const map = L.map(el, {
+      zoomControl: true,
+      attributionControl: true,
+      preferCanvas: true,
+    }).setView([40.742, -74.168], 12);
+
+    const dark = L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      { maxZoom: 20, subdomains: "abcd" }
+    ).addTo(map);
+
+    const sat = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { maxZoom: 20 }
+    );
+
+    const pinsLayer = L.layerGroup().addTo(map);
+
+    mapRef.current = map;
+    darkRef.current = dark;
+    satRef.current = sat;
+    pinsLayerRef.current = pinsLayer;
+
+    map.on("click", (e: any) => {
+      if (!addModeRef.current) return;
+      setForm(f => ({ ...f, lat: Number(e.latlng.lat.toFixed(6)), lon: Number(e.latlng.lng.toFixed(6)) }));
+      // one placement per click-to-place session
+      addModeRef.current = false;
+      setAddMode(false);
+      setAddOpen(true);
+    });
+
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource(api("/api/pins/stream"));
+      es.onmessage = () => refreshPins();
+      es.onerror = () => { /* polling fallback covers */ };
+    } catch { /* ignore */ }
+
+    refreshPins();
+    const t = window.setInterval(() => refreshPins(), 4000);
+
+    // Ensure initial sizing is correct
+    window.setTimeout(() => map.invalidateSize(true), 120);
+
+    return () => {
+      window.clearInterval(t);
+      try { es?.close(); } catch {}
+      map.remove();
+      mapRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---- Render pins to map ----
+  useEffect(() => {
+    const layer = pinsLayerRef.current;
+    if (!layer) return;
+
+    layer.clearLayers();
+
+    for (const p of pins) {
+      const lat = (p.lat ?? p.latitude);
+      const lon = (p.lon ?? p.longitude);
+      if (typeof lat !== "number" || typeof lon !== "number") continue;
+
+      const icon = L.divIcon({
+        className: "",
+        html: `<div class="lynx-marker" title="${(p.category||"").replace(/"/g,'')}">${markerSvg(p.category || "")}</div>`,
+        iconSize: [34,34],
+        iconAnchor: [17,17],
+      });
+
+      const mk = L.marker([lat, lon], { icon });
+      const title = (p.title || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      const desc = (p.description || "").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      mk.bindPopup(
+        `<b>${title}</b><br/><span style="opacity:.85">${desc}</span><br/><span style="opacity:.65">${lat.toFixed(5)}, ${lon.toFixed(5)}</span>`
+      );
+      mk.addTo(layer);
+    }
+  }, [pins]);
+
+  function onAddPin() {
+    const m = mapRef.current;
+    const c = m ? m.getCenter() : { lat: 40.742, lng: -74.168 };
+    setForm(f => ({ ...f, lat: Number(c.lat.toFixed(6)), lon: Number(c.lng.toFixed(6)) }));
+
+    // Open modal immediately so the button visibly works
+    setAddOpen(true);
+
+    // Enable one-tap map placement (fixes iPad + stale closure issues)
+    addModeRef.current = true;
+    setAddMode(true);
+    showToast("Tap map to set location");
+  }
+
+  return (
+    <div className="lynx-shell">
+      <div id="lynx-map" />
+
+      {/* TOP BAR: original controls */}
+      <div className="lynx-topbar">
+        <div className="left">
+          <div className="brand">
+            <div className="title">LYNX</div>
+            <div className="sub">Geospatial Intelligence Prototype</div>
+          </div>
+        </div>
+
+        <div className="mid">
+          <button className="btn" onClick={refreshPins}>Refresh</button>
+          <button className="btn primary" onClick={startAddPin}>Add Pin</button>
+          <button className="btn" onClick={localSeed} title="Posts local seed pins to backend">Local Seed</button>
+        </div>
+
+        <div className="right">
+          <button className="btn" onClick={toggleSidebar}>
+            {sidebarOpen ? "Hide Panel" : "Show Panel"}
+          </button>
+        </div>
+      </div>
+
+      {/* LEFT FEED */}
+      <div className={`sidebar ${sidebarOpen ? "" : "hidden"}`}>
+        <div className="side-head">
+          <div className="h1">PINS</div>
+          <div className="h2">Live feed from backend — shows whatever agents post</div>
+        </div>
+
+        <div className="chips">
+          <span className={`chip ${catFilter==="All" ? "active":""}`} onClick={() => setCatFilter("All")}>
+            All
+          </span>
+          {CATS.map(c => (
+            <span key={c} className={`chip ${catFilter===c ? "active":""}`} onClick={() => setCatFilter(c)}>
+              <Icon name={c} /> {c}
+            </span>
+          ))}
+        </div>
+
+        <div className="feed">
+          {filtered.map((p, idx) => (
+            <div className="card" key={(p.id || "") + "_" + idx}>
+              <div className="row">
+                <div>
+                  <div className="k">{p.title || "(untitled)"}</div>
+                  <div className="meta">
+                    {p.description || "—"}
+                    <br />
+                    {(typeof (p.lat ?? p.latitude) === "number" && typeof (p.lon ?? p.longitude) === "number")
+                      ? `${(p.lat ?? p.latitude)!.toFixed(4)}, ${(p.lon ?? p.longitude)!.toFixed(4)} · Sev ${p.severity ?? 2}`
+                      : `Sev ${p.severity ?? 2}`}
+                  </div>
+                </div>
+                <div className="badge">{(p.category || "unknown").toLowerCase()}</div>
+              </div>
+
+              <div className="actions">
+                <button className="btn" onClick={() => focusPin(p)}>Focus</button>
+                <button className="btn" onClick={() => showToast("Details view: next step")}>Details</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* LYNX OPS (kept) */}
+      <div className="ops">
+        <div className="hdr">LYNX OPS</div>
+        <div className="grid">
+          <button className="btn" onClick={toggleMapStyle}>{mapStyle === "dark" ? "Satellite" : "Dark"}</button>
+          <button className="btn" onClick={pingApi}>Ping API</button>
+          <button className="btn" onClick={wipeAll}>Wipe</button>
+          <button className="btn" onClick={refreshPins}>Force Refresh</button>
+        </div>
+        <div className="status">
+          Backend via Vite proxy: <b>/api</b><br/>
+          Status: {opsStatus}
+        </div>
+      </div>
+
+      {/* ADD ENTRY MODAL */}
+      {addOpen && (
+        <div className="modal-back" onMouseDown={() => setAddOpen(false)}>
+          <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="top">
+              <div className="t">Add Entry</div>
+              <button className="btn" onClick={() => setAddOpen(false)}>Close</button>
+            </div>
+
+            <div className="body">
+              <div className="grid2">
+                <div className="field">
+                  <label>Category</label>
+                  <select value={form.category} onChange={e => setForm(f => ({...f, category: e.target.value}))}>
+                    {CATS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>Severity</label>
+                  <select value={String(form.severity)} onChange={e => setForm(f => ({...f, severity: Number(e.target.value)}))}>
+                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Title</label>
+                <input value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} placeholder="New Entry" />
+              </div>
+
+              <div className="field">
+                <label>Description</label>
+                <textarea value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} placeholder="Notes, context, identifiers…" />
+              </div>
+
+              <div className="grid3">
+                <div className="field">
+                  <label>Latitude</label>
+                  <input value={String(form.lat)} onChange={e => setForm(f => ({...f, lat: Number(e.target.value)}))} />
+                </div>
+                <div className="field">
+                  <label>Longitude</label>
+                  <input value={String(form.lon)} onChange={e => setForm(f => ({...f, lon: Number(e.target.value)}))} />
+                </div>
+              </div>
+
+              <div className="field">
+                <label>Tags (comma-separated)</label>
+                <input value={form.tags} onChange={e => setForm(f => ({...f, tags: e.target.value}))} placeholder="corridor, witness, plate, ip, mac…" />
+              </div>
+
+              <div className="grid3">
+                <div className="field">
+                  <label>Link / URL (optional)</label>
+                  <input value={form.url} onChange={e => setForm(f => ({...f, url: e.target.value}))} placeholder="https://…" />
+                </div>
+                <div className="field">
+                  <label>Image URL (optional)</label>
+                  <input value={form.image_url} onChange={e => setForm(f => ({...f, image_url: e.target.value}))} placeholder="https://…" />
+                </div>
+              </div>
+            </div>
+
+            <div className="foot">
+              <button className="btn" onClick={() => setAddOpen(false)}>Cancel</button>
+              <button className="btn primary" onClick={submitAdd}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}

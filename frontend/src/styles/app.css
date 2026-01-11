@@ -1,0 +1,273 @@
+:root{
+  --bg0:#05070c;
+  --panel:rgba(10,16,28,.78);
+  --stroke:rgba(140,180,255,.18);
+  --text:rgba(235,245,255,.92);
+  --muted:rgba(235,245,255,.68);
+  --chip:rgba(10,16,28,.45);
+}
+
+html, body, #root { height: 100%; margin: 0; background: var(--bg0); color: var(--text); }
+* { box-sizing: border-box; }
+
+.app {
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: radial-gradient(1200px 800px at 20% 10%, rgba(80,130,255,.12), transparent 60%),
+              radial-gradient(900px 700px at 90% 20%, rgba(120,80,255,.10), transparent 55%),
+              var(--bg0);
+}
+
+.header {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  right: 16px;
+  z-index: 2200;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.brand {
+  pointer-events: auto;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(8,12,20,.55);
+  border: 1px solid var(--stroke);
+  backdrop-filter: blur(10px);
+}
+.brand .title { font-weight: 800; letter-spacing: .16em; font-size: 14px; }
+.brand .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.headerActions { pointer-events: auto; display: flex; gap: 10px; }
+.btn {
+  border: 1px solid var(--stroke);
+  background: rgba(10,16,28,.55);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+.btn:hover { border-color: rgba(140,180,255,.30); }
+.spacer { flex: 1; }
+
+.mapStage { position: absolute; inset: 0; z-index: 1; }
+
+/* Sidebar overlays map */
+.sidebar {
+  position: absolute;
+  top: 72px;
+  left: 16px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  height: calc(100vh - 92px);
+  z-index: 2000;
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  border-radius: 18px;
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+  transform: translateX(-110%);
+  opacity: 0;
+  transition: transform 220ms ease, opacity 220ms ease;
+  pointer-events: auto;
+}
+.sidebar.open { transform: translateX(0); opacity: 1; }
+
+.sidebarInner { height: 100%; overflow: auto; padding: 14px; }
+.sectionTitle {
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 6px 0 10px;
+}
+
+/* Filter chips */
+.chips { display:flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+.chip {
+  border: 1px solid rgba(140,180,255,.22);
+  background: var(--chip);
+  color: rgba(235,245,255,.85);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.chip.on { border-color: rgba(140,180,255,.40); background: rgba(15,22,38,.60); }
+
+.card {
+  border: 1px solid var(--stroke);
+  background: rgba(6,10,18,.55);
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.cardTop { display:flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.badge {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(140,180,255,.25);
+  color: rgba(235,245,255,.80);
+  background: rgba(10,16,28,.35);
+}
+.cardTitle { font-weight: 700; margin: 0; }
+.cardDesc { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.cardCoord { margin: 6px 0 0; color: rgba(235,245,255,.55); font-size: 12px; }
+.cardActions { display:flex; gap: 8px; margin-top: 10px; }
+.miniBtn {
+  border: 1px solid rgba(140,180,255,.22);
+  background: rgba(10,16,28,.40);
+  color: rgba(235,245,255,.88);
+  padding: 7px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* Leaflet base */
+.leaflet-container { height: 100%; width: 100%; background: #000; }
+/* Keep leaflet controls below header */
+.leaflet-top { top: 84px; }
+
+/* Dark leaf controls */
+.leaflet-control {
+  border-radius: 12px !important;
+  border: 1px solid rgba(140,180,255,.22) !important;
+  background: rgba(10,16,28,.70) !important;
+  color: rgba(235,245,255,.90) !important;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 28px rgba(0,0,0,.35);
+}
+.leaflet-bar {
+  border: 1px solid rgba(140,180,255,.22) !important;
+  background: rgba(10,16,28,.70) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+.leaflet-bar a,
+.leaflet-bar a:visited {
+  background: transparent !important;
+  color: rgba(235,245,255,.92) !important;
+  border-bottom: 1px solid rgba(140,180,255,.18) !important;
+}
+.leaflet-bar a:hover { background: rgba(15,22,38,.80) !important; }
+.leaflet-bar a:last-child { border-bottom: 0 !important; }
+.leaflet-control-layers-toggle { filter: invert(1) brightness(1.2); }
+.leaflet-control-attribution {
+  background: rgba(10,16,28,.60) !important;
+  color: rgba(235,245,255,.55) !important;
+  border-radius: 10px;
+  border: 1px solid rgba(140,180,255,.18);
+  margin: 0 10px 10px 0;
+}
+
+/* Modal */
+.modalBackdrop{
+  position: absolute;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(0,0,0,.45);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 18px;
+}
+.modal{
+  width: min(820px, 100%);
+  max-height: 86vh;
+  overflow: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(140,180,255,.22);
+  background: rgba(10,16,28,.88);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 60px rgba(0,0,0,.55);
+  padding: 14px;
+}
+.modalHeader{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(140,180,255,.14);
+}
+.modalTitle{ font-weight: 800; letter-spacing: .06em; }
+.modalFooter{ display:flex; justify-content: flex-end; margin-top: 10px; }
+
+.field{ display:block; margin-top: 10px; }
+.label{ font-size: 12px; color: rgba(235,245,255,.70); margin-bottom: 6px; }
+.input{
+  width: 100%;
+  border: 1px solid rgba(140,180,255,.18);
+  background: rgba(6,10,18,.55);
+  color: rgba(235,245,255,.92);
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+}
+.input:focus{ border-color: rgba(140,180,255,.35); }
+.grid2{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.block{ margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(140,180,255,.12); }
+.blockTitle{ font-size: 12px; color: rgba(235,245,255,.75); letter-spacing: .10em; text-transform: uppercase; }
+
+@media (max-width: 720px){
+  .grid2, .grid3 { grid-template-columns: 1fr; }
+  .sidebar { width: calc(100vw - 32px); }
+}
+
+/* ----- Icon chips + badges ----- */
+.chip { display:flex; align-items:center; gap: 8px; }
+.chipIcon{
+  width: 18px; height: 18px;
+  display:flex; align-items:center; justify-content:center;
+  opacity: .95;
+}
+
+.badge { display:flex; align-items:center; gap: 6px; }
+.badgeIcon{
+  width: 18px; height: 18px;
+  display:flex; align-items:center; justify-content:center;
+  opacity: .95;
+}
+
+/* ----- LYNX SVG Marker (Leaflet divIcon) ----- */
+.lynxPin{
+  width: 40px; height: 40px;
+  display:flex; align-items:center; justify-content:center;
+}
+.lynxPinRing{
+  width: 40px; height: 40px;
+  border-radius: 999px;
+  background: rgba(10,16,28,.78);
+  border: 1px solid rgba(140,180,255,.25);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 28px rgba(0,0,0,.45);
+  display:flex; align-items:center; justify-content:center;
+}
+.lynxPinIcon{
+  width: 22px; height: 22px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pin) 20%, rgba(10,16,28,.25));
+  border: 1px solid rgba(255,255,255,.18);
+  display:flex; align-items:center; justify-content:center;
+}
+.lynxPinIcon svg{
+  width: 16px; height: 16px;
+}
+
+/* Optional: brighten the icon stroke slightly */
+.lynxPinIcon svg path,
+.lynxPinIcon svg line,
+.lynxPinIcon svg circle,
+.lynxPinIcon svg rect {
+  stroke: currentColor;
+}

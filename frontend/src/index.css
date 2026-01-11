@@ -1,0 +1,161 @@
+import "./lynx_hotfix";
+import "./lynx_hotfix.css";
+:root {
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+
+.app {
+  height: 100vh;
+  background: radial-gradient(1200px 700px at 40% 20%, rgba(36, 62, 120, 0.25), rgba(7, 11, 18, 1));
+  color: rgba(232, 238, 252, 0.95);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+}
+
+.topbar {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: rgba(7, 11, 18, 0.75);
+  backdrop-filter: blur(10px);
+}
+
+.brandTitle { font-weight: 800; letter-spacing: 0.08em; }
+.brandSub { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+
+.actions { display: flex; gap: 10px; }
+
+.btn {
+  background: rgba(14, 18, 28, 0.8);
+  color: rgba(232, 238, 252, 0.95);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.btn:hover { border-color: rgba(255,255,255,0.22); }
+
+.stage {
+  position: relative;
+  height: calc(100vh - 64px);
+  overflow: hidden;
+}
+
+.mapCanvas {
+  position: absolute;
+  inset: 0;
+}
+
+.mapCanvas .leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #070b12;
+}
+
+/* Pins panel overlays the map (no more skinny strip map) */
+.leftPanel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  bottom: 16px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  overflow: auto;
+
+  background: rgba(10, 14, 24, 0.72);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 14px;
+  backdrop-filter: blur(14px);
+  padding: 14px;
+}
+
+.panelTitle { font-weight: 700; margin-bottom: 6px; }
+.panelMeta { font-size: 12px; opacity: 0.75; margin-bottom: 12px; }
+
+.pinList { display: grid; gap: 12px; }
+
+.pinCard {
+  text-align: left;
+  width: 100%;
+  background: rgba(12, 16, 28, 0.55);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 14px;
+  padding: 14px;
+  cursor: pointer;
+}
+.pinCard:hover { border-color: rgba(255,255,255,0.22); }
+.pinCard.active { border-color: rgba(110, 160, 255, 0.55); }
+
+.pinHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pinTitle { font-weight: 700; }
+.pill {
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  opacity: 0.9;
+}
+.pill.incident { background: rgba(255, 185, 90, 0.10); }
+.pill.note { background: rgba(120, 200, 255, 0.10); }
+
+.pinDesc { opacity: 0.85; margin-top: 8px; }
+.pinCoords {
+  opacity: 0.75;
+  margin-top: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+/* Darken Leaflet controls */
+.leaflet-control-zoom a,
+.leaflet-control-layers {
+  background: rgba(10,14,24,0.75) !important;
+  color: rgba(232,238,252,0.95) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+}
+
+
+/* LYNX_HUD_DOCK_PATCH */
+:root{
+  --lynx-safe-top: env(safe-area-inset-top, 0px);
+  --lynx-safe-right: env(safe-area-inset-right, 0px);
+  --lynx-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --lynx-safe-left: env(safe-area-inset-left, 0px);
+}
+
+/* Keep Leaflet UI inside safe areas (iPad Safari especially) */
+.leaflet-control-container .leaflet-top{
+  top: calc(var(--lynx-safe-top) + 12px) !important;
+}
+.leaflet-control-container .leaflet-bottom{
+  bottom: calc(var(--lynx-safe-bottom) + 12px) !important;
+}
+.leaflet-control-container .leaflet-right{
+  right: calc(var(--lynx-safe-right) + 12px) !important;
+}
+.leaflet-control-container .leaflet-left{
+  left: calc(var(--lynx-safe-left) + 12px) !important;
+}
+
+/* Dock LYNX OPS so it stays visible and never overlaps attribution */
+#lynx-ops{
+  position: fixed !important;
+  right: calc(var(--lynx-safe-right) + 14px) !important;
+  bottom: calc(var(--lynx-safe-bottom) + 14px) !important;
+  z-index: 9999 !important;
+
+  width: min(420px, calc(100vw - 28px - var(--lynx-safe-left) - var(--lynx-safe-right))) !important;
+  max-height: calc(100vh - 28px - var(--lynx-safe-top) - var(--lynx-safe-bottom)) !important;
+  overflow: auto !important;
+}
+
+/* Prevent Leaflet attribution from being covered even if something else is docked */
+.leaflet-control-attribution{
+  max-width: min(70vw, 640px) !important;
+  white-space: normal !important;
+}
