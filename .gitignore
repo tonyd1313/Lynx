@@ -36,3 +36,7 @@ Thumbs.db
 
 # --- Git / misc ---
 *.bak
+
+# --- Local DB / runtime data ---
+*.db
+backend/app/data/*.db
