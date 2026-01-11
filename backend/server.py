@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from typing import Any, Dict, List
-import asyncio, json, time
+import asyncio, json, time, os
 
 app = FastAPI(title="LYNX Backend (shim)")
 
@@ -41,3 +42,7 @@ async def pins_stream():
             yield f"event: pins\ndata: {json.dumps(payload)}\n\n"
             await asyncio.sleep(2)
     return StreamingResponse(gen(), media_type="text/event-stream")
+
+static_dir = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+if os.path.exists(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
