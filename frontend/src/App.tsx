@@ -47,7 +47,7 @@ export default function App() {
     saveEntities(next);
     setAddOpen(false);
     setSidebarOpen(true);
-    setFocusTarget({ lat: newEntity.lat, lng: newEntity.lng, zoom: 15 });
+    setFocusTarget({ lat: newEntity.lat, lng: newEntity.lng, zoom: 17 });
   }
 
   return (

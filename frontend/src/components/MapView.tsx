@@ -69,9 +69,9 @@ export default function MapView({
       <ClickCapture onPick={onMapPick} />
       {focusTarget && <FlyTo target={focusTarget} />}
 
-      <ZoomControl position="bottomright" />
+      <ZoomControl position="topright" />
 
-      <LayersControl position="bottomleft">
+      <LayersControl position="topright">
         <BaseLayer checked name="Dark">
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"

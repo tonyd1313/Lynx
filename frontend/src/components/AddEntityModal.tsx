@@ -62,6 +62,11 @@ export default function AddEntityModal({
   if (!open) return null;
 
   function submit() {
+    if (!lat || !lng) {
+      alert("Please place the entity on the map or enter coordinates.");
+      return;
+    }
+
     const links = [link1.trim()].filter(Boolean);
     const imageUrls = [img1.trim()].filter(Boolean);
 
