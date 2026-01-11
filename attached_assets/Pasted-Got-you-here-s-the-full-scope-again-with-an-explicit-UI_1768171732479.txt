@@ -1,0 +1,342 @@
+Got you — here’s the full scope again, with an explicit UI Layout + Non-Overlapping Visibility Contract baked in (so every control is always reachable, readable, and positioned logically).
+
+⸻
+
+LYNX UI Scope + Button Functions (Full Spec + Layout Contract)
+
+0) Global UI Layout Contract (MANDATORY)
+
+All UI elements must be visible, reachable, and never overlap each other.
+
+A) No-overlap rules
+	•	No button may cover:
+	•	map zoom controls
+	•	map attribution / watermark
+	•	sidebar controls
+	•	modals/drawers
+	•	No UI can be pushed off-screen on iPad/mobile.
+	•	No element may sit “under” the map container due to z-index mistakes.
+
+B) Logical positioning rules (standard operator layout)
+	•	Top-left: App title + global actions (Refresh, Add Pin)
+	•	Left side: Sidebar (filters + entity list)
+	•	Right side (top or mid): Map controls (zoom, map style)
+	•	Bottom-right: Ops overlay (backend status + ping + save/clear)
+	•	Bottom-left: Toast notifications (so they don’t block ops overlay)
+
+C) Responsive rules
+	•	Sidebar must be:
+	•	dockable (expanded)
+	•	collapsible (icon rail or hidden)
+	•	Map controls must remain visible at all widths.
+	•	Use:
+	•	position: fixed for overlays
+	•	safe-area padding for iOS (env(safe-area-inset-*))
+	•	Minimum tap target: 44px (iOS ergonomic standard).
+
+D) Z-index rules
+	•	Base map: z-index: 0
+	•	Sidebar: z-index: 20
+	•	Map controls: z-index: 30
+	•	Ops overlay: z-index: 40
+	•	Modals: z-index: 100
+	•	Toasts: z-index: 110
+
+E) “No hidden critical controls”
+	•	Zoom buttons must never be hidden behind sidebars or overlays.
+	•	Satellite/Dark toggles must always be visible.
+	•	“Hide Panel” must always be available (even when panel is hidden).
+
+⸻
+
+1) Top Bar Controls (Header)
+
+A) Refresh
+
+Goal: Reload entities/pins and re-render UI without changing user context.
+
+Behavior
+	•	Shows loading spinner while running.
+	•	Re-fetch entities and pins.
+	•	Preserve:
+	•	selected filters
+	•	selected entity (if still exists)
+	•	map zoom/center
+	•	sidebar open/closed state
+	•	theme + map style
+	•	On backend failure:
+	•	toast: “Backend unreachable — showing last known data”
+	•	set status badge to down
+
+Backend mode
+	•	GET /api/entities
+
+Local mode
+	•	Read from local storage / cached state
+
+⸻
+
+B) Add Pin
+
+Goal: Create an entity and place it on the map.
+
+UX flow
+	1.	Click Add Pin
+	2.	Modal opens:
+	•	Type selector (Incident/Suspect/Person/Org/Vehicle/Device/Evidence/Article/Location/Note)
+	•	Fields change based on type
+	3.	User places on map OR enters lat/lng
+	4.	Submit saves and renders immediately
+
+Minimum required fields
+	•	type
+	•	title
+	•	description
+	•	coordinates { lat, lng }
+
+Backend mode
+	•	POST /api/entities
+
+Local mode
+	•	Save to local store, re-render
+
+⸻
+
+2) Sidebar (Left Panel)
+
+A) Type Filter Chips
+
+Goal: Toggle visibility by type.
+
+Behavior
+	•	If at least one type selected → show only those
+	•	If none selected → show all
+	•	Filters apply to:
+	•	sidebar cards
+	•	map markers
+	•	search results (if/when added)
+
+⸻
+
+B) Entity Cards
+
+Focus
+	•	Centers map to entity coordinates
+	•	Zooms to focus zoom if zoom too low
+	•	Highlights marker (pulse ring)
+	•	Selects entity and opens popup
+	•	Scrolls sidebar to card (if sidebar open)
+
+Details
+
+Opens a drawer/modal with:
+	•	full description
+	•	metadata (createdAt, tags, confidence)
+	•	attachments (images/links)
+	•	actions: Edit, Delete (confirm), Export JSON
+
+⸻
+
+C) Hide Panel
+
+Goal: Collapse sidebar without breaking map controls.
+
+Behavior
+	•	Toggle sidebar open/closed
+	•	Persist sidebarOpen in local storage
+	•	When hidden:
+	•	show a thin tab or floating button to reopen
+	•	Sidebar collapse must NOT overlap zoom controls.
+
+⸻
+
+3) Map Controls (Right Side)
+
+A) Satellite View
+
+Goal: Toggle map layer.
+
+Behavior
+	•	Toggle between:
+	•	darkStreet (default)
+	•	satellite
+	•	Persist in local storage
+	•	Markers stay on top
+
+⸻
+
+B) Zoom + / Zoom –
+
+Goal: Always visible, theme-matched, no overlap.
+
+Behavior
+	•		•	zoom in
+	•	– zoom out
+	•	Buttons must be dark-mode styled (no white defaults)
+	•	Must remain visible even if sidebar is open
+
+⸻
+
+C) Marker Interaction Rules
+	•	Hover (desktop): tooltip title
+	•	Click:
+	•	select entity
+	•	open popup
+	•	highlight marker
+	•	scroll sidebar to card (if open)
+
+⸻
+
+4) LYNX OPS Overlay (Bottom-right)
+
+This is your operator “quick actions” module.
+
+A) Dark Mode
+
+Goal: Global UI theme toggle.
+
+Behavior
+	•	toggles theme class on root
+	•	persists lynx.theme
+	•	affects:
+	•	panels
+	•	buttons
+	•	modals
+	•	typography contrast
+	•	(Optional) map style can remain independent unless you link them.
+
+⸻
+
+B) Ping App
+
+Goal: Confirm backend is alive + show latency.
+
+Behavior
+	•	Calls /api/health
+	•	Updates:
+	•	Status: ok/down
+	•	Ping: XXms
+	•	If down:
+	•	toast
+	•	optional fallback to local mode
+
+⸻
+
+C) Save Investigation ✅
+
+Goal: Save the current board state as a reloadable investigation snapshot.
+
+What it must save
+	•	investigation name (required)
+	•	entities in current board (or references)
+	•	filters
+	•	selected entity
+	•	map center/zoom
+	•	theme + map style
+	•	sidebar open/closed state
+
+UX flow
+	•	modal:
+	•	Name
+	•	optional notes
+	•	toast success/fail
+
+Backend mode
+	•	POST /api/investigations
+
+Local mode
+	•	localStorage/IndexedDB lynx.investigations[]
+
+⸻
+
+D) Clear Board ✅
+
+Goal: Clear active workspace pins/entities without deleting saved investigations.
+
+Behavior
+	•	Confirmation required:
+	•	“Clear the board? Unsaved changes will be lost.”
+	•	Clears:
+	•	all active entities in current session
+	•	selection
+	•	resets filters to show-all
+	•	returns map to default home view
+	•	Keeps:
+	•	theme
+	•	map style
+	•	sidebar preference
+
+⸻
+
+5) Backend Status Line (in Ops Overlay)
+
+Shows: “Backend via: /api” + “Status: ok/down”
+
+Behavior rules
+	•	Must update on:
+	•	Refresh
+	•	Ping App
+	•	Add Pin submit
+	•	Save Investigation
+	•	On any API error:
+	•	status flips to down
+	•	toast shows error summary
+
+⸻
+
+6) Entity Types + Icons (Pins)
+
+Each type must have:
+	•	distinct icon
+	•	distinct marker styling (shape + glow)
+
+Required mapping
+	•	Incident → warning triangle
+	•	Suspect → mask/outline
+	•	Person → user icon
+	•	Org → building icon
+	•	Vehicle → car icon
+	•	Device → chip/router icon
+	•	Evidence → paperclip/tag icon
+	•	Article → document/book icon
+	•	Location → map pin icon
+	•	Note → note icon
+
+Marker render rules
+	•	Selected marker must be obvious
+	•	Cluster behavior optional but recommended later
+
+⸻
+
+7) Layout Implementation Requirements (so Replit can’t “almost” do it)
+
+A) Fixed regions with safe spacing
+	•	Top bar: fixed height, never covers map controls
+	•	Sidebar: fixed left rail; collapses on smaller screens
+	•	Map controls: fixed right stack with padding from top and bottom overlays
+	•	Ops overlay: fixed bottom-right, sized to avoid map controls
+
+B) Collision avoidance (hard rule)
+
+If sidebar is open:
+	•	right-side controls must keep a safe margin from sidebar edge
+If ops overlay is visible:
+	•	zoom controls must sit above it (or move up)
+
+C) “Always visible” checklist (must pass)
+	•	Refresh ✅
+	•	Add Pin ✅
+	•	Hide Panel ✅
+	•	Zoom +/– ✅
+	•	Satellite toggle ✅
+	•	Dark toggle ✅
+	•	Ping App ✅
+	•	Save Investigation ✅
+	•	Clear Board ✅
+	•	Backend status ✅
+
+If any of these are off-screen or covered → considered broken.
+
+⸻
+
+If you want the fastest way to make Replit implement this correctly: paste the file names where these controls currently live (like Sidebar.tsx, MapView.tsx, lynx_ops_overlay.ts, etc.), and I’ll give you a drop-in wiring map (exact handlers + state fields) that matches this scope 1:1.
