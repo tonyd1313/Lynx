@@ -33,21 +33,19 @@ export default function AddEntityModal({
   const [lat, setLat] = useState<number>(initialLat);
   const [lng, setLng] = useState<number>(initialLng);
   const [severity, setSeverity] = useState<1 | 2 | 3 | 4 | 5>(2);
+  const [confidence, setConfidence] = useState<number>(85);
   const [tags, setTags] = useState<string>("");
+
+  useMemo(() => {
+    setLat(initialLat);
+    setLng(initialLng);
+  }, [initialLat, initialLng]);
 
   // “Expandable” fields
   const [link1, setLink1] = useState("");
   const [img1, setImg1] = useState("");
 
-  // Example device fields
-  const [ip, setIp] = useState("");
-  const [mac, setMac] = useState("");
-  const [hostname, setHostname] = useState("");
-
-  // Example person/org/vehicle
-  const [name, setName] = useState("");
-  const [alias, setAlias] = useState("");
-  const [plate, setPlate] = useState("");
+  const isIntelType = type !== "incident" && type !== "note";
 
   const showDevice = type === "device";
   const showPerson = type === "person" || type === "suspect";
@@ -70,13 +68,12 @@ export default function AddEntityModal({
     const links = [link1.trim()].filter(Boolean);
     const imageUrls = [img1.trim()].filter(Boolean);
 
-    const base: Omit<Entity, "id"> = {
+    const base: any = {
       type,
       title: title.trim() || `${typeLabel} Entry`,
       description: description.trim() || "(no description)",
       lat: Number(lat),
       lng: Number(lng),
-      severity,
       tags: tags.split(",").map(s => s.trim()).filter(Boolean),
       source: "local",
       occurredAt: new Date().toISOString(),
@@ -84,6 +81,12 @@ export default function AddEntityModal({
       links: links.length ? links : undefined,
       imageUrls: imageUrls.length ? imageUrls : undefined,
     };
+
+    if (type === "incident") {
+      base.severity = severity;
+    } else if (isIntelType) {
+      base.confidence = confidence;
+    }
 
     // Attach structured fields by type
     if (showDevice) {
@@ -142,16 +145,32 @@ export default function AddEntityModal({
             </select>
           </label>
 
-          <label className="field">
-            <div className="label">Severity</div>
-            <select className="input" value={severity} onChange={(e) => setSeverity(Number(e.target.value) as any)}>
-              <option value={1}>1 (low)</option>
-              <option value={2}>2</option>
-              <option value={3}>3</option>
-              <option value={4}>4</option>
-              <option value={5}>5 (high)</option>
-            </select>
-          </label>
+          {type === "incident" ? (
+            <label className="field">
+              <div className="label">Severity</div>
+              <select className="input" value={severity} onChange={(e) => setSeverity(Number(e.target.value) as any)}>
+                <option value={1}>1 (low)</option>
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+                <option value={4}>4</option>
+                <option value={5}>5 (high)</option>
+              </select>
+            </label>
+          ) : isIntelType ? (
+            <label className="field">
+              <div className="label">Confidence (%)</div>
+              <input
+                type="number"
+                className="input"
+                min={0}
+                max={100}
+                value={confidence}
+                onChange={(e) => setConfidence(Number(e.target.value))}
+              />
+            </label>
+          ) : (
+            <div className="field" />
+          )}
         </div>
 
         <label className="field">
