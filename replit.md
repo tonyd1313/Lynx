@@ -39,3 +39,9 @@ frontend/         - React/Vite frontend
   - Configured frontend for port 5000 with allowedHosts: true
   - Renamed app.py to server.py to avoid module naming conflict
   - Set up development workflows for both frontend and backend
+- 2026-01-12: UI and Functional Overhaul
+  - Implemented non-overlapping UI layout contract
+  - Enhanced Add Pin flow with severity/confidence fields
+  - Added tabbed sidebar for list/filter views
+  - Integrated Ops Overlay with backend health tracking
+  - Configured production build for frontend serving via FastAPI
