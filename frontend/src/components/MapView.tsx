@@ -72,14 +72,14 @@ export default function MapView({
       <ZoomControl position="topright" />
 
       <LayersControl position="topright">
-        <BaseLayer checked name="Dark">
+        <BaseLayer checked name="Dark (Street)">
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             attribution="&copy; OpenStreetMap contributors &copy; CARTO"
           />
         </BaseLayer>
 
-        <BaseLayer name="Satellite">
+        <BaseLayer name="Satellite (Esri)">
           <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
             attribution="Tiles &copy; Esri"

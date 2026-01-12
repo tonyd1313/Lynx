@@ -35,6 +35,8 @@ export default function App() {
     });
   }
 
+  const [activeTab, setActiveTab] = useState<"list" | "filters">("list");
+
   function refreshToSeed() {
     const seed = resetEntities();
     setEntities(seed);
@@ -74,57 +76,68 @@ export default function App() {
 
       <div className={"sidebar " + (sidebarOpen ? "open" : "")}>
         <div className="sidebarInner">
-          <div className="sectionTitle">Pins</div>
-          <div style={{ color: "rgba(235,245,255,.68)", fontSize: 13, marginBottom: 10 }}>
-            Dummy data (local) — ready to swap to FastAPI
+          <div className="sidebarTabs" style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid var(--stroke)", paddingBottom: "10px" }}>
+            <button 
+              className="miniBtn" 
+              onClick={() => setActiveTab("list")}
+              style={{ flex: 1, background: activeTab === "list" ? "rgba(140,180,255,.15)" : "transparent" }}
+            >
+              List
+            </button>
+            <button 
+              className="miniBtn" 
+              onClick={() => setActiveTab("filters")}
+              style={{ flex: 1, background: activeTab === "filters" ? "rgba(140,180,255,.15)" : "transparent" }}
+            >
+              Filters
+            </button>
           </div>
 
-          <div className="chips">
-            {TYPE_ORDER.map((t) => (
-              <div
-                key={t}
-                className={"chip " + (activeTypes.has(t) ? "on" : "")}
-                onClick={() => toggleType(t)}
-                role="button"
-                tabIndex={0}
-              >
-                <span className="chipIcon"><IconForType type={t} size={14} /></span>
-                <span>{labelForType(t)}</span>
-              </div>
-            ))}
-          </div>
-
-          {filtered.map((e) => (
-            <div className="card" key={e.id}>
-              <div className="cardTop">
-                <h3 className="cardTitle">{e.title}</h3>
-                <span className="badge">
-                  <span className="badgeIcon"><IconForType type={e.type} size={14} /></span>
-                  {e.type}
-                </span>
-              </div>
-              <p className="cardDesc">{e.description}</p>
-              <div className="cardCoord">
-                {e.lat.toFixed(4)}, {e.lng.toFixed(4)} • Sev {e.severity ?? "-"}
-              </div>
-
-              <div className="cardActions">
-                <button
-                  className="miniBtn"
-                  onClick={() => setFocusTarget({ lat: e.lat, lng: e.lng, zoom: 15 })}
-                >
-                  Focus
-                </button>
-
-                <button
-                  className="miniBtn"
-                  onClick={() => alert(JSON.stringify(e, null, 2))}
-                >
-                  Details
-                </button>
+          {activeTab === "filters" && (
+            <div className="sidebarSection">
+              <div className="sectionTitle">Type Filters</div>
+              <div className="chips">
+                {TYPE_ORDER.map((t) => (
+                  <div
+                    key={t}
+                    className={"chip " + (activeTypes.has(t) ? "on" : "")}
+                    onClick={() => toggleType(t)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <span className="chipIcon"><IconForType type={t} size={14} /></span>
+                    <span>{labelForType(t)}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          )}
+
+          {activeTab === "list" && (
+            <div className="sidebarSection">
+              <div className="sectionTitle">Active Pins ({filtered.length})</div>
+              {filtered.map((e) => (
+                <div 
+                  className="card" 
+                  key={e.id}
+                  onClick={() => setFocusTarget({ lat: e.lat, lng: e.lng, zoom: 17 })}
+                  style={{ cursor: "pointer" }}
+                >
+                  <div className="cardTop">
+                    <h3 className="cardTitle">{e.title}</h3>
+                    <span className="badge">
+                      <span className="badgeIcon"><IconForType type={e.type} size={14} /></span>
+                      {e.type}
+                    </span>
+                  </div>
+                  <p className="cardDesc">{e.description}</p>
+                  <div className="cardCoord">
+                    {e.lat.toFixed(4)}, {e.lng.toFixed(4)} • {e.type === "incident" ? `Sev ${e.severity ?? "-"}` : `Conf ${e.confidence ?? "-"}%`}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
