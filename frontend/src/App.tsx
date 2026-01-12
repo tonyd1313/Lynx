@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import MapView from "./components/MapView";
 import AddEntityModal from "./components/AddEntityModal";
 import type { Entity, EntityType } from "./types/entities";
@@ -72,7 +72,7 @@ export default function App() {
     }
   }
 
-  useMemo(() => {
+  useEffect(() => {
     checkHealth();
   }, []);
 
@@ -86,6 +86,28 @@ export default function App() {
 
   return (
     <div className="app">
+      <div className="stars-container" style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: 0,
+        overflow: "hidden",
+        background: "var(--bg0)",
+        pointerEvents: "none"
+      }}>
+        {[...Array(50)].map((_, i) => (
+          <div key={i} className="star" style={{
+            position: "absolute",
+            top: `${Math.random() * 100}%`,
+            left: `${Math.random() * 100}%`,
+            width: `${Math.random() * 3}px`,
+            height: `${Math.random() * 3}px`,
+            background: "#fff",
+            borderRadius: "50%",
+            opacity: Math.random(),
+            animation: `twinkle ${2 + Math.random() * 5}s infinite ease-in-out`
+          }} />
+        ))}
+      </div>
       <div className="header">
         <div className="brand">
           <div className="title">LYNX</div>
