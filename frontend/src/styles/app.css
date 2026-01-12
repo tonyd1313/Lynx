@@ -33,79 +33,197 @@ html, body, #root {
   left: 0;
 }
 
-.brand {
-  pointer-events: auto;
-  padding: 12px 16px;
-  border-radius: 6px;
-  background: rgba(13,17,23,.9);
-  border: 1px solid var(--stroke);
-  backdrop-filter: blur(8px);
+.gn-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: #000;
+  border-bottom: 1px solid #30363d;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  z-index: 2600;
 }
-.brand .title { 
-  font-weight: 600; 
-  letter-spacing: .1em; 
-  font-size: 16px;
+
+.gn-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.gn-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
   color: #fff;
 }
 
-.btn {
-  border: 1px solid var(--stroke);
-  background: #21262d;
-  color: #c9d1d9;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
+.gn-links {
+  display: flex;
+  gap: 24px;
 }
-.btn:hover { 
-  background: #30363d;
-  border-color: #8b949e;
+
+.gn-links a {
+  color: #8b949e;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.gn-links a:hover {
+  color: #fff;
+}
+
+.user-email {
+  color: #8b949e;
+  font-size: 13px;
+}
+
+.gn-search-container {
+  position: absolute;
+  top: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 800px;
+  padding: 0 24px;
+  z-index: 2600;
+}
+
+.gn-search-box {
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+}
+
+.gn-search-box input {
+  background: transparent;
+  border: none;
+  color: #fff;
+  flex: 1;
+  font-size: 16px;
+  outline: none;
+}
+
+.shortcut-hint {
+  background: #21262d;
+  color: #8b949e;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
 }
 
 .sidebar {
   position: absolute;
-  top: 80px;
-  left: 20px;
-  width: 380px;
-  height: calc(100vh - 120px);
+  top: 160px;
+  left: 24px;
+  width: 440px;
+  height: calc(100vh - 184px);
   z-index: 2000;
-  background: var(--panel);
-  border: 1px solid var(--stroke);
-  border-radius: 6px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 4px;
   backdrop-filter: blur(12px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  transition: transform 220ms ease, opacity 220ms ease;
+  pointer-events: auto;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.8);
 }
 
-.card {
-  border: 1px solid var(--stroke);
-  background: rgba(22,27,34,.6);
-  border-radius: 6px;
-  padding: 16px;
+.results-count {
+  font-size: 14px;
+  color: #8b949e;
+  margin-bottom: 24px;
+  font-weight: 500;
+}
+
+.gn-card {
+  background: transparent;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.gn-card:hover {
+  background: #161b22;
+}
+
+.card-labels {
+  display: flex;
+  gap: 8px;
   margin-bottom: 12px;
-  transition: border-color 0.2s;
-}
-.card:hover {
-  border-color: var(--accent);
 }
 
-.chip.on { 
-  border-color: var(--accent); 
-  background: rgba(46,160,67,.15);
-  color: #fff;
+.label-benign {
+  color: #2ea043;
+  border: 1px solid #2ea043;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 2px;
 }
 
-@keyframes twinkle {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.2); }
+.label-hosting {
+  color: #8b949e;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
 }
 
-.stars-container {
-  background: radial-gradient(circle at center, #1a1a1a 0%, #010204 100%);
+.card-ip {
+  color: #2ea043;
+  font-size: 24px;
+  font-weight: 500;
+  margin-bottom: 12px;
 }
 
-.sidebarInner { height: 100%; overflow: auto; padding: 14px; }
+.card-meta {
+  color: #8b949e;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-pill {
+  background: #21262d;
+  color: #c9d1d9;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  border: 1px solid #30363d;
+}
+
+.mapStage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.leaflet-top.leaflet-right {
+  top: 160px !important;
+}
+
+.sidebarInner { height: 100%; overflow-y: auto; padding: 24px; }
 .sectionTitle {
   font-size: 12px;
   letter-spacing: .12em;

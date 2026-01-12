@@ -91,7 +91,7 @@ export default function App() {
         inset: 0,
         zIndex: 0,
         overflow: "hidden",
-        background: "var(--bg0)",
+        background: "#000",
         pointerEvents: "none"
       }}>
         {[...Array(50)].map((_, i) => (
@@ -108,28 +108,45 @@ export default function App() {
           }} />
         ))}
       </div>
-      <div className="header">
-        <div className="brand">
-          <div className="title">LYNX</div>
-          <div className="sub">Geospatial Intelligence Prototype</div>
-        </div>
 
-        <div className="headerActions">
-          <button className="btn" onClick={refreshToSeed}>Refresh</button>
-          <button className="btn" onClick={() => setAddOpen(true)} style={{ background: "rgba(80,130,255,.25)", borderColor: "rgba(80,130,255,.4)" }}>Add Pin</button>
+      <div className="gn-header">
+        <div className="gn-nav-left">
+          <div className="gn-logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>
+            <span>GREYNOISE</span>
+          </div>
+          <nav className="gn-links">
+            <a href="#">TRENDS</a>
+            <a href="#">TODAY</a>
+            <a href="#">TAGS</a>
+            <a href="#">ANALYSIS</a>
+          </nav>
         </div>
-
-        <div className="spacer" />
-
-        <div className="headerActions">
-          <button className="btn" onClick={() => setSidebarOpen(v => !v)}>
-            {sidebarOpen ? "Hide Panel" : "Show Panel"}
-          </button>
+        <div className="gn-nav-right">
+          <span className="user-email">tonydrumright5@gmail.com</span>
         </div>
+      </div>
+
+      <div className="gn-search-container">
+        <div className="gn-search-box">
+          <span className="search-icon">🔍</span>
+          <input type="text" placeholder='tags:"CrushFTP RCE Attempt"' />
+          <span className="shortcut-hint">⌘ K</span>
+        </div>
+      </div>
+
+      <div className="mapStage">
+        <MapView
+          entities={filtered}
+          focusTarget={focusTarget}
+          onMapPick={(lat, lng) => setDraftLatLng({ lat, lng })}
+        />
       </div>
 
       <div className={"sidebar " + (sidebarOpen ? "open" : "")}>
         <div className="sidebarInner">
+          <div className="results-count">{filtered.length} Results</div>
+          
           <div className="sidebarTabs" style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid var(--stroke)", paddingBottom: "10px" }}>
             <button 
               className="miniBtn" 
@@ -149,7 +166,7 @@ export default function App() {
 
           {activeTab === "filters" && (
             <div className="sidebarSection">
-              <div className="sectionTitle">Type Filters</div>
+              <div className="sectionTitle">Classification</div>
               <div className="chips">
                 {TYPE_ORDER.map((t) => (
                   <div
@@ -169,24 +186,23 @@ export default function App() {
 
           {activeTab === "list" && (
             <div className="sidebarSection">
-              <div className="sectionTitle">Active Pins ({filtered.length})</div>
               {filtered.map((e) => (
                 <div 
-                  className="card" 
+                  className="gn-card" 
                   key={e.id}
                   onClick={() => setFocusTarget({ lat: e.lat, lng: e.lng, zoom: 17 })}
-                  style={{ cursor: "pointer" }}
                 >
-                  <div className="cardTop">
-                    <h3 className="cardTitle">{e.title}</h3>
-                    <span className="badge">
-                      <span className="badgeIcon"><IconForType type={e.type} size={14} /></span>
-                      {e.type}
-                    </span>
+                  <div className="card-labels">
+                    <span className="label-benign">{e.type.toUpperCase()}</span>
+                    <span className="label-hosting">HOSTING</span>
                   </div>
-                  <p className="cardDesc">{e.description}</p>
-                  <div className="cardCoord">
-                    {e.lat.toFixed(4)}, {e.lng.toFixed(4)} • {e.type === "incident" ? `Sev ${e.severity ?? "-"}` : `Conf ${e.confidence ?? "-"}%`}
+                  <div className="card-ip">{e.lat.toFixed(4)}, {e.lng.toFixed(4)}</div>
+                  <div className="card-meta">
+                    <div><strong>TITLE:</strong> {e.title}</div>
+                    <div><strong>LAST SEEN:</strong> 2025-08-31</div>
+                  </div>
+                  <div className="card-tags">
+                    <span className="tag-pill">{e.type}</span>
                   </div>
                 </div>
               ))}
@@ -195,12 +211,12 @@ export default function App() {
         </div>
       </div>
 
-      <div className="mapStage">
-        <MapView
-          entities={filtered}
-          focusTarget={focusTarget}
-          onMapPick={(lat, lng) => setDraftLatLng({ lat, lng })}
-        />
+      <div className="headerActions" style={{ position: "absolute", top: "140px", left: "20px", zIndex: 2500 }}>
+          <button className="btn" onClick={refreshToSeed}>Refresh</button>
+          <button className="btn" onClick={() => setAddOpen(true)} style={{ background: "#2ea043", color: "#fff", borderColor: "#2ea043" }}>Add Pin</button>
+          <button className="btn" onClick={() => setSidebarOpen(v => !v)}>
+            {sidebarOpen ? "Hide Panel" : "Show Panel"}
+          </button>
       </div>
 
       <AddEntityModal
@@ -215,10 +231,10 @@ export default function App() {
         position: "fixed",
         bottom: "20px",
         right: "20px",
-        zIndex: 40,
-        background: "var(--panel)",
+        zIndex: 2500,
+        background: "rgba(13,17,23,.95)",
         border: "1px solid var(--stroke)",
-        borderRadius: "14px",
+        borderRadius: "6px",
         padding: "12px",
         backdropFilter: "blur(10px)",
         width: "240px",
@@ -227,17 +243,14 @@ export default function App() {
       }}>
         <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "8px", display: "flex", justifyContent: "space-between" }}>
           <span>LYNX OPS</span>
-          <span style={{ color: backendStatus === "ok" ? "#4ade80" : "#f87171" }}>
+          <span style={{ color: backendStatus === "ok" ? "#2ea043" : "#f87171" }}>
             ● {backendStatus.toUpperCase()} {ping !== null ? `(${ping}ms)` : ""}
           </span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
           <button className="miniBtn" onClick={checkHealth}>Ping App</button>
-          <button className="miniBtn" onClick={() => alert("Save Investigation - Not implemented in dummy mode")}>Save ✅</button>
+          <button className="miniBtn" onClick={() => alert("Save Investigation")}>Save</button>
           <button className="miniBtn" onClick={clearBoard} style={{ gridColumn: "span 2", borderColor: "rgba(248,113,113,.3)" }}>Clear Board</button>
-        </div>
-        <div style={{ fontSize: "10px", color: "var(--muted)", marginTop: "8px", textAlign: "center" }}>
-          Backend via: /api
         </div>
       </div>
     </div>
