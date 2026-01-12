@@ -60,7 +60,7 @@ export default function App() {
 
         <div className="headerActions">
           <button className="btn" onClick={refreshToSeed}>Refresh</button>
-          <button className="btn" onClick={() => setAddOpen(true)}>Add Pin</button>
+          <button className="btn" onClick={() => setAddOpen(true)} style={{ background: "rgba(80,130,255,.25)", borderColor: "rgba(80,130,255,.4)" }}>Add Pin</button>
         </div>
 
         <div className="spacer" />

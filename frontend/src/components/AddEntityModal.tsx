@@ -36,6 +36,16 @@ export default function AddEntityModal({
   const [confidence, setConfidence] = useState<number>(85);
   const [tags, setTags] = useState<string>("");
 
+  // Example device fields
+  const [ip, setIp] = useState("");
+  const [mac, setMac] = useState("");
+  const [hostname, setHostname] = useState("");
+
+  // Example person/org/vehicle
+  const [name, setName] = useState("");
+  const [alias, setAlias] = useState("");
+  const [plate, setPlate] = useState("");
+
   useMemo(() => {
     setLat(initialLat);
     setLng(initialLng);
