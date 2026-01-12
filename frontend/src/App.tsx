@@ -36,6 +36,8 @@ export default function App() {
   }
 
   const [activeTab, setActiveTab] = useState<"list" | "filters">("list");
+  const [backendStatus, setBackendStatus] = useState<"ok" | "down" | "checking">("checking");
+  const [ping, setPing] = useState<number | null>(null);
 
   function refreshToSeed() {
     const seed = resetEntities();
@@ -50,6 +52,36 @@ export default function App() {
     setAddOpen(false);
     setSidebarOpen(true);
     setFocusTarget({ lat: newEntity.lat, lng: newEntity.lng, zoom: 17 });
+  }
+
+  async function checkHealth() {
+    setBackendStatus("checking");
+    const start = Date.now();
+    try {
+      const res = await fetch("/api/health");
+      if (res.ok) {
+        setBackendStatus("ok");
+        setPing(Date.now() - start);
+      } else {
+        setBackendStatus("down");
+        setPing(null);
+      }
+    } catch {
+      setBackendStatus("down");
+      setPing(null);
+    }
+  }
+
+  useMemo(() => {
+    checkHealth();
+  }, []);
+
+  function clearBoard() {
+    if (confirm("Clear the board? Unsaved changes will be lost.")) {
+      setEntities([]);
+      saveEntities([]);
+      setFocusTarget(null);
+    }
   }
 
   return (
@@ -156,6 +188,35 @@ export default function App() {
         onClose={() => setAddOpen(false)}
         onCreate={createEntity}
       />
+
+      <div className="opsOverlay" style={{
+        position: "fixed",
+        bottom: "20px",
+        right: "20px",
+        zIndex: 40,
+        background: "var(--panel)",
+        border: "1px solid var(--stroke)",
+        borderRadius: "14px",
+        padding: "12px",
+        backdropFilter: "blur(10px)",
+        width: "240px",
+        pointerEvents: "auto"
+      }}>
+        <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "8px", display: "flex", justifyContent: "space-between" }}>
+          <span>LYNX OPS</span>
+          <span style={{ color: backendStatus === "ok" ? "#4ade80" : "#f87171" }}>
+            ● {backendStatus.toUpperCase()} {ping !== null ? `(${ping}ms)` : ""}
+          </span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+          <button className="miniBtn" onClick={checkHealth}>Ping App</button>
+          <button className="miniBtn" onClick={() => alert("Save Investigation - Not implemented in dummy mode")}>Save ✅</button>
+          <button className="miniBtn" onClick={clearBoard} style={{ gridColumn: "span 2", borderColor: "rgba(248,113,113,.3)" }}>Clear Board</button>
+        </div>
+        <div style={{ fontSize: "10px", color: "var(--muted)", marginTop: "8px", textAlign: "center" }}>
+          Backend via: /api
+        </div>
+      </div>
     </div>
   );
 }
