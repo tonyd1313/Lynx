@@ -22,6 +22,7 @@ export type Entity = {
 
   // Common metadata
   severity?: 1 | 2 | 3 | 4 | 5;
+  confidence?: number;
   tags?: string[];
   source?: string;         // e.g., "observer", "news", "report", "tip"
   occurredAt?: string;     // ISO timestamp

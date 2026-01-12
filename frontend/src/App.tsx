@@ -200,7 +200,8 @@ export default function App() {
         padding: "12px",
         backdropFilter: "blur(10px)",
         width: "240px",
-        pointerEvents: "auto"
+        pointerEvents: "auto",
+        transition: "transform 0.2s ease"
       }}>
         <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "8px", display: "flex", justifyContent: "space-between" }}>
           <span>LYNX OPS</span>
