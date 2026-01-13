@@ -10,7 +10,7 @@ const TYPE_ORDER: EntityType[] = [
 ];
 
 export default function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [entities, setEntities] = useState<Entity[]>([]);
   const [activeTypes, setActiveTypes] = useState<Set<EntityType>>(() => new Set(TYPE_ORDER));
@@ -172,7 +172,10 @@ export default function App() {
 
       <div className={"sidebar " + (sidebarOpen ? "open" : "")}>
         <div className="sidebarInner">
-          <div className="results-count">{filtered.length} Results</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+            <div className="results-count">{filtered.length} Results</div>
+            <button className="miniBtn" onClick={() => setSidebarOpen(false)}>✕</button>
+          </div>
           
           <div className="sidebarTabs" style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid var(--stroke)", paddingBottom: "10px" }}>
             <button 
@@ -256,28 +259,28 @@ export default function App() {
 
       <div className="opsOverlay" style={{
         position: "fixed",
-        bottom: "20px",
-        right: "20px",
+        bottom: "10px",
+        right: "10px",
         zIndex: 2500,
-        background: "rgba(13,17,23,.95)",
+        background: "rgba(13,17,23,.8)",
         border: "1px solid var(--stroke)",
-        borderRadius: "6px",
-        padding: "12px",
+        borderRadius: "4px",
+        padding: "6px 10px",
         backdropFilter: "blur(10px)",
-        width: "240px",
+        width: "180px",
         pointerEvents: "auto",
-        transition: "transform 0.2s ease"
+        transition: "transform 0.2s ease",
+        fontSize: "10px"
       }}>
-        <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "8px", display: "flex", justifyContent: "space-between" }}>
-          <span>LYNX OPS</span>
+        <div style={{ color: "var(--muted)", marginBottom: "4px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span>OPS</span>
           <span style={{ color: backendStatus === "ok" ? "#2ea043" : "#f87171" }}>
             ● {backendStatus.toUpperCase()} {ping !== null ? `(${ping}ms)` : ""}
           </span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-          <button className="miniBtn" onClick={checkHealth}>Ping App</button>
-          <button className="miniBtn" onClick={() => alert("Save Investigation")}>Save</button>
-          <button className="miniBtn" onClick={clearBoard} style={{ gridColumn: "span 2", borderColor: "rgba(248,113,113,.3)" }}>Clear Board</button>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
+          <button className="miniBtn" style={{ padding: "2px 4px", fontSize: "9px" }} onClick={checkHealth}>Ping</button>
+          <button className="miniBtn" style={{ padding: "2px 4px", fontSize: "9px" }} onClick={clearBoard}>Clear</button>
         </div>
       </div>
     </div>
