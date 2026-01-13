@@ -13,7 +13,8 @@ html, body, #root {
   margin: 0; 
   background: var(--bg0); 
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .app {
@@ -21,16 +22,7 @@ html, body, #root {
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background: transparent;
-}
-
-#tsparticles {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  top: 0;
-  left: 0;
+  background: #000;
 }
 
 .gn-header {
@@ -39,13 +31,14 @@ html, body, #root {
   left: 0;
   right: 0;
   height: 64px;
-  background: #000;
+  background: rgba(0,0,0,0.8);
   border-bottom: 1px solid #30363d;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
   z-index: 2600;
+  backdrop-filter: blur(8px);
 }
 
 .gn-nav-left {
@@ -58,9 +51,9 @@ html, body, #root {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 2px;
-  color: #fff;
+  color: #2ea043;
 }
 
 .gn-links {
@@ -71,18 +64,14 @@ html, body, #root {
 .gn-links a {
   color: #8b949e;
   text-decoration: none;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   letter-spacing: 1px;
+  transition: color 0.2s;
 }
 
-.gn-links a:hover {
+.gn-links a:hover, .gn-links a.active {
   color: #fff;
-}
-
-.user-email {
-  color: #8b949e;
-  font-size: 13px;
 }
 
 .gn-search-container {
@@ -97,14 +86,15 @@ html, body, #root {
 }
 
 .gn-search-box {
-  background: #0d1117;
+  background: rgba(13,17,23,0.9);
   border: 1px solid #30363d;
-  border-radius: 6px;
+  border-radius: 8px;
   height: 48px;
   display: flex;
   align-items: center;
   padding: 0 16px;
   gap: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
 }
 
 .gn-search-box input {
@@ -112,105 +102,64 @@ html, body, #root {
   border: none;
   color: #fff;
   flex: 1;
-  font-size: 16px;
+  font-size: 14px;
   outline: none;
-}
-
-.shortcut-hint {
-  background: #21262d;
-  color: #8b949e;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
 }
 
 .sidebar {
   position: absolute;
   top: 160px;
   left: 24px;
-  width: 440px;
+  width: 400px;
   height: calc(100vh - 184px);
   z-index: 2000;
-  background: #0d1117;
+  background: rgba(13,17,23,0.95);
   border: 1px solid #30363d;
-  border-radius: 4px;
+  border-radius: 12px;
   backdrop-filter: blur(12px);
-  transition: transform 220ms ease, opacity 220ms ease;
+  transition: transform 0.3s ease;
   pointer-events: auto;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0,0,0,0.8);
 }
 
-.results-count {
-  font-size: 14px;
-  color: #8b949e;
-  margin-bottom: 24px;
-  font-weight: 500;
-}
-
 .gn-card {
-  background: transparent;
+  background: rgba(22,27,34,0.5);
   border: 1px solid #30363d;
-  border-radius: 4px;
-  padding: 20px;
-  margin-bottom: 16px;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 .gn-card:hover {
-  background: #161b22;
-}
-
-.card-labels {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.label-benign {
-  color: #2ea043;
-  border: 1px solid #2ea043;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 2px;
-}
-
-.label-hosting {
-  color: #8b949e;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
+  background: rgba(33,38,45,0.8);
+  border-color: #2ea043;
+  transform: translateY(-2px);
 }
 
 .card-ip {
   color: #2ea043;
-  font-size: 24px;
-  font-weight: 500;
-  margin-bottom: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  font-family: 'Roboto Mono', monospace;
 }
 
-.card-meta {
-  color: #8b949e;
-  font-size: 13px;
-  line-height: 1.6;
-  margin-bottom: 12px;
-}
-
-.card-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.tag-pill {
-  background: #21262d;
-  color: #c9d1d9;
-  padding: 4px 10px;
+.label-benign {
+  color: #2ea043;
+  background: rgba(46,160,67,0.1);
+  border: 1px solid rgba(46,160,67,0.3);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
   border-radius: 4px;
-  font-size: 12px;
-  border: 1px solid #30363d;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 
 .mapStage {

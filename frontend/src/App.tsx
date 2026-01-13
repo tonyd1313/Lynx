@@ -113,46 +113,51 @@ export default function App() {
         inset: 0,
         zIndex: 0,
         overflow: "hidden",
-        background: "#000",
+        background: "radial-gradient(circle at center, #111 0%, #000 100%)",
         pointerEvents: "none"
       }}>
-        {[...Array(50)].map((_, i) => (
+        {[...Array(100)].map((_, i) => (
           <div key={i} className="star" style={{
             position: "absolute",
             top: `${Math.random() * 100}%`,
             left: `${Math.random() * 100}%`,
-            width: `${Math.random() * 3}px`,
-            height: `${Math.random() * 3}px`,
-            background: "#fff",
+            width: `${Math.random() * 2 + 1}px`,
+            height: `${Math.random() * 2 + 1}px`,
+            background: i % 5 === 0 ? "#2ea043" : "#fff",
             borderRadius: "50%",
             opacity: Math.random(),
-            animation: `twinkle ${2 + Math.random() * 5}s infinite ease-in-out`
+            boxShadow: i % 10 === 0 ? "0 0 10px #2ea043" : "none",
+            animation: `twinkle ${3 + Math.random() * 7}s infinite ease-in-out`
           }} />
         ))}
       </div>
 
       <div className="gn-header">
         <div className="gn-nav-left">
-          <div className="gn-logo">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/></svg>
-            <span>GREYNOISE</span>
+          <div className="gn-logo" style={{ color: "#2ea043" }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+            <span style={{ fontWeight: "bold", letterSpacing: "1px" }}>OPAL C2</span>
           </div>
           <nav className="gn-links">
-            <a href="#">TRENDS</a>
-            <a href="#">TODAY</a>
-            <a href="#">TAGS</a>
+            <a href="#" className="active">OPERATIONS</a>
+            <a href="#">INTEL</a>
+            <a href="#">COVERAGE</a>
             <a href="#">ANALYSIS</a>
           </nav>
         </div>
         <div className="gn-nav-right">
-          <span className="user-email">tonydrumright5@gmail.com</span>
+          <div style={{ textAlign: "right", marginRight: "12px" }}>
+            <div className="user-email" style={{ fontSize: "12px", lineHeight: "1.2" }}>TONY DRUMRIGHT</div>
+            <div style={{ fontSize: "10px", color: "var(--muted)" }}>tonydrumright5@gmail.com</div>
+          </div>
+          <div className="user-avatar" style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#2ea043", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: "bold" }}>T</div>
         </div>
       </div>
 
       <div className="gn-search-container">
         <div className="gn-search-box">
           <span className="search-icon">🔍</span>
-          <input type="text" placeholder='tags:"CrushFTP RCE Attempt"' />
+          <input type="text" placeholder='Search threats, IPs, tags...' />
           <span className="shortcut-hint">⌘ K</span>
         </div>
       </div>
