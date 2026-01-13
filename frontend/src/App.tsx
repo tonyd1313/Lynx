@@ -245,11 +245,19 @@ export default function App() {
         </div>
       </div>
 
-      <div className="headerActions" style={{ position: "absolute", top: "140px", left: "20px", zIndex: 2500 }}>
+      <div className="headerActions" style={{ 
+        position: "absolute", 
+        top: "160px", 
+        left: "calc(5vw + 30px)", 
+        zIndex: 2500,
+        display: "flex",
+        flexDirection: "column",
+        gap: "6px"
+      }}>
           <button className="btn" onClick={refreshToSeed}>Refresh</button>
-          <button className="btn" onClick={() => setAddOpen(true)} style={{ background: "#2ea043", color: "#fff", borderColor: "#2ea043" }}>Add Pin</button>
+          <button className="btn" onClick={() => setAddOpen(true)} style={{ background: "rgba(46,160,67,0.2)", borderColor: "rgba(46,160,67,0.4)", color: "#fff" }}>Add Pin</button>
           <button className="btn" onClick={() => setSidebarOpen(v => !v)}>
-            {sidebarOpen ? "Hide Panel" : "Show Panel"}
+            {sidebarOpen ? "Hide" : "Panel"}
           </button>
       </div>
 
