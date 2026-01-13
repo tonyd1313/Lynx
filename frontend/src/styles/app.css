@@ -108,35 +108,46 @@ html, body, #root {
 
 .sidebar {
   position: absolute;
-  top: 160px;
-  left: 24px;
-  width: 400px;
-  height: calc(100vh - 184px);
+  top: 150px;
+  right: calc(5vw + 10px);
+  width: 300px;
+  height: calc(100vh - 220px);
   z-index: 2000;
-  background: rgba(13,17,23,0.95);
-  border: 1px solid #30363d;
-  border-radius: 12px;
+  background: rgba(13,17,23,0.85);
+  border: 1px solid rgba(46, 160, 67, 0.4);
+  border-radius: 4px;
   backdrop-filter: blur(12px);
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
   pointer-events: auto;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(10px);
 }
 
 .gn-card {
-  background: rgba(22,27,34,0.5);
-  border: 1px solid #30363d;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
+  background: rgba(22,27,34,0.4);
+  border: 1px solid rgba(46, 160, 67, 0.2);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 8px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .gn-card:hover {
-  background: rgba(33,38,45,0.8);
-  border-color: #2ea043;
-  transform: translateY(-2px);
+  background: rgba(46, 160, 67, 0.1);
+  border-color: rgba(46, 160, 67, 0.6);
+}
+
+.opsOverlay {
+  position: absolute !important;
+  bottom: 10px !important;
+  right: 10px !important;
+  background: rgba(13,17,23,0.85) !important;
+  border: 1px solid rgba(46, 160, 67, 0.4) !important;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5) !important;
 }
 
 .card-ip {

@@ -155,10 +155,14 @@ export default function App() {
       </div>
 
       <div className="gn-search-container">
-        <div className="gn-search-box">
+        <div className="gn-search-box" style={{ 
+          background: "rgba(13,17,23,0.8)", 
+          border: "1px solid rgba(46,160,67,0.4)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.5), 0 0 10px rgba(46,160,67,0.1)"
+        }}>
           <span className="search-icon">🔍</span>
           <input type="text" placeholder='Search threats, IPs, tags...' />
-          <span className="shortcut-hint">⌘ K</span>
+          <span className="shortcut-hint" style={{ background: "rgba(46,160,67,0.1)", color: "#2ea043", border: "1px solid rgba(46,160,67,0.2)" }}>⌘ K</span>
         </div>
       </div>
 
