@@ -11,16 +11,14 @@ const TYPE_ORDER: EntityType[] = [
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const [entities, setEntities] = useState<Entity[]>([]);
   const [activeTypes, setActiveTypes] = useState<Set<EntityType>>(() => new Set(TYPE_ORDER));
-
   const [focusTarget, setFocusTarget] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
-
-  // Map click sets the "placement" for the next entry
   const [draftLatLng, setDraftLatLng] = useState<{ lat: number; lng: number }>({ lat: 40.7357, lng: -74.1724 });
-
   const [addOpen, setAddOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"list" | "filters">("list");
+  const [backendStatus, setBackendStatus] = useState<"ok" | "down" | "checking">("checking");
+  const [ping, setPing] = useState<number | null>(null);
 
   const filtered = useMemo(() => {
     return entities.filter(e => activeTypes.has(e.type));
@@ -35,20 +33,12 @@ export default function App() {
     });
   }
 
-  const [activeTab, setActiveTab] = useState<"list" | "filters">("list");
-  const [backendStatus, setBackendStatus] = useState<"ok" | "down" | "checking">("checking");
-  const [ping, setPing] = useState<number | null>(null);
-
   useEffect(() => {
-    // Initial fetch
     fetchPins().then(setEntities).catch(console.error);
-
-    // Subscribe to SSE
     const unsubscribe = subscribePins((payload: any) => {
       if (payload.pins) {
         setEntities(payload.pins);
       } else if (payload.id) {
-        // Single pin update
         setEntities(prev => {
           const exists = prev.find(p => p.id === payload.id);
           if (exists) return prev.map(p => p.id === payload.id ? payload : p);
@@ -56,7 +46,6 @@ export default function App() {
         });
       }
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -100,7 +89,6 @@ export default function App() {
 
   function clearBoard() {
     if (confirm("Clear the board? Unsaved changes will be lost.")) {
-      // In a real app we might call a DELETE /api/pins
       setEntities([]);
       setFocusTarget(null);
     }
@@ -174,28 +162,30 @@ export default function App() {
         />
       </div>
 
+      <div className="headerActions" style={{ 
+        position: "absolute", 
+        top: "160px", 
+        left: "calc(5vw + 30px)", 
+        zIndex: 2500,
+        display: "flex",
+        gap: "6px"
+      }}>
+          <button className="btn" onClick={refreshToSeed}>Refresh</button>
+          <button className="btn" onClick={() => setAddOpen(true)} style={{ background: "rgba(46,160,67,0.2)", borderColor: "rgba(46,160,67,0.4)", color: "#fff" }}>Add Pin</button>
+          <button className="btn" onClick={() => setSidebarOpen(v => !v)}>
+            {sidebarOpen ? "Hide" : "Panel"}
+          </button>
+      </div>
+
       <div className={"sidebar " + (sidebarOpen ? "open" : "")}>
         <div className="sidebarInner">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <div className="results-count">{filtered.length} Results</div>
             <button className="miniBtn" onClick={() => setSidebarOpen(false)}>✕</button>
           </div>
-          
           <div className="sidebarTabs" style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid var(--stroke)", paddingBottom: "10px" }}>
-            <button 
-              className="miniBtn" 
-              onClick={() => setActiveTab("list")}
-              style={{ flex: 1, background: activeTab === "list" ? "rgba(140,180,255,.15)" : "transparent" }}
-            >
-              List
-            </button>
-            <button 
-              className="miniBtn" 
-              onClick={() => setActiveTab("filters")}
-              style={{ flex: 1, background: activeTab === "filters" ? "rgba(140,180,255,.15)" : "transparent" }}
-            >
-              Filters
-            </button>
+            <button className="miniBtn" onClick={() => setActiveTab("list")} style={{ flex: 1, background: activeTab === "list" ? "rgba(46,160,67,.15)" : "transparent" }}>List</button>
+            <button className="miniBtn" onClick={() => setActiveTab("filters")} style={{ flex: 1, background: activeTab === "filters" ? "rgba(46,160,67,.15)" : "transparent" }}>Filters</button>
           </div>
 
           {activeTab === "filters" && (
@@ -203,13 +193,7 @@ export default function App() {
               <div className="sectionTitle">Classification</div>
               <div className="chips">
                 {TYPE_ORDER.map((t) => (
-                  <div
-                    key={t}
-                    className={"chip " + (activeTypes.has(t) ? "on" : "")}
-                    onClick={() => toggleType(t)}
-                    role="button"
-                    tabIndex={0}
-                  >
+                  <div key={t} className={"chip " + (activeTypes.has(t) ? "on" : "")} onClick={() => toggleType(t)} role="button" tabIndex={0}>
                     <span className="chipIcon"><IconForType type={t} size={14} /></span>
                     <span>{labelForType(t)}</span>
                   </div>
@@ -221,11 +205,7 @@ export default function App() {
           {activeTab === "list" && (
             <div className="sidebarSection">
               {filtered.map((e) => (
-                <div 
-                  className="gn-card" 
-                  key={e.id}
-                  onClick={() => setFocusTarget({ lat: e.lat, lng: e.lng, zoom: 17 })}
-                >
+                <div className="gn-card" key={e.id} onClick={() => setFocusTarget({ lat: e.lat, lng: e.lng, zoom: 17 })}>
                   <div className="card-labels">
                     <span className="label-benign">{e.type.toUpperCase()}</span>
                     <span className="label-hosting">HOSTING</span>
@@ -245,22 +225,6 @@ export default function App() {
         </div>
       </div>
 
-      <div className="headerActions" style={{ 
-        position: "absolute", 
-        top: "160px", 
-        left: "calc(5vw + 30px)", 
-        zIndex: 2500,
-        display: "flex",
-        flexDirection: "column",
-        gap: "6px"
-      }}>
-          <button className="btn" onClick={refreshToSeed}>Refresh</button>
-          <button className="btn" onClick={() => setAddOpen(true)} style={{ background: "rgba(46,160,67,0.2)", borderColor: "rgba(46,160,67,0.4)", color: "#fff" }}>Add Pin</button>
-          <button className="btn" onClick={() => setSidebarOpen(v => !v)}>
-            {sidebarOpen ? "Hide" : "Panel"}
-          </button>
-      </div>
-
       <AddEntityModal
         open={addOpen}
         initialLat={draftLatLng.lat}
@@ -275,7 +239,7 @@ export default function App() {
         right: "10px",
         zIndex: 2500,
         background: "rgba(13,17,23,.8)",
-        border: "1px solid var(--stroke)",
+        border: "1px solid rgba(46,160,67,0.4)",
         borderRadius: "4px",
         padding: "6px 10px",
         backdropFilter: "blur(10px)",
