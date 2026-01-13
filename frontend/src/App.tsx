@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import MapView from "./components/MapView";
 import AddEntityModal from "./components/AddEntityModal";
 import type { Entity, EntityType } from "./types/entities";
-import { IconForType, labelForType } from "./ui/typeIcons";
+import { labelForType } from "./ui/typeIcons";
 import { fetchPins, postPin, subscribePins } from "./data/liveApi";
 
 const TYPE_ORDER: EntityType[] = [
@@ -160,68 +160,71 @@ export default function App() {
           focusTarget={focusTarget}
           onMapPick={(lat, lng) => setDraftLatLng({ lat, lng })}
         />
-      </div>
+        
+        <div className="headerActions" style={{ 
+          position: "absolute", 
+          top: "10px", 
+          left: "10px", 
+          zIndex: 2500,
+          display: "flex",
+          gap: "6px"
+        }}>
+            <button className="btn" onClick={refreshToSeed}>Refresh</button>
+            <button className="btn" onClick={() => setAddOpen(true)} style={{ background: "rgba(46,160,67,0.2)", borderColor: "rgba(46,160,67,0.4)", color: "#fff" }}>Add Pin</button>
+            <button className="btn" onClick={() => setSidebarOpen(v => !v)}>
+              Panel
+            </button>
+        </div>
 
-      <div className="headerActions" style={{ 
-        position: "absolute", 
-        top: "160px", 
-        left: "calc(5vw + 30px)", 
-        zIndex: 2500,
-        display: "flex",
-        gap: "6px"
-      }}>
-          <button className="btn" onClick={refreshToSeed}>Refresh</button>
-          <button className="btn" onClick={() => setAddOpen(true)} style={{ background: "rgba(46,160,67,0.2)", borderColor: "rgba(46,160,67,0.4)", color: "#fff" }}>Add Pin</button>
-          <button className="btn" onClick={() => setSidebarOpen(v => !v)}>
-            {sidebarOpen ? "Hide" : "Panel"}
-          </button>
-      </div>
+        <div className={"sidebar " + (sidebarOpen ? "open" : "")}>
+          <div className="sidebarInner">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+              <div className="results-count" style={{ fontSize: "10px" }}>{filtered.length} Results</div>
+              <button className="miniBtn" onClick={() => setSidebarOpen(false)} style={{ padding: "1px 4px" }}>✕</button>
+            </div>
+            <div className="sidebarTabs" style={{ display: "flex", gap: "4px", marginBottom: "8px", borderBottom: "1px solid var(--stroke)", paddingBottom: "4px" }}>
+              <button className="miniBtn" onClick={() => setActiveTab("list")} style={{ flex: 1, fontSize: "9px", background: activeTab === "list" ? "rgba(46,160,67,.15)" : "transparent" }}>List</button>
+              <button className="miniBtn" onClick={() => setActiveTab("filters")} style={{ flex: 1, fontSize: "9px", background: activeTab === "filters" ? "rgba(46,160,67,.15)" : "transparent" }}>Filters</button>
+            </div>
 
-      <div className={"sidebar " + (sidebarOpen ? "open" : "")}>
-        <div className="sidebarInner">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-            <div className="results-count">{filtered.length} Results</div>
-            <button className="miniBtn" onClick={() => setSidebarOpen(false)}>✕</button>
-          </div>
-          <div className="sidebarTabs" style={{ display: "flex", gap: "10px", marginBottom: "20px", borderBottom: "1px solid var(--stroke)", paddingBottom: "10px" }}>
-            <button className="miniBtn" onClick={() => setActiveTab("list")} style={{ flex: 1, background: activeTab === "list" ? "rgba(46,160,67,.15)" : "transparent" }}>List</button>
-            <button className="miniBtn" onClick={() => setActiveTab("filters")} style={{ flex: 1, background: activeTab === "filters" ? "rgba(46,160,67,.15)" : "transparent" }}>Filters</button>
-          </div>
+            {activeTab === "filters" && (
+              <div className="sidebarSection">
+                <div className="chips">
+                  {TYPE_ORDER.map((t) => (
+                    <div key={t} className={"chip " + (activeTypes.has(t) ? "on" : "")} onClick={() => toggleType(t)} role="button">
+                      <span>{labelForType(t)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-          {activeTab === "filters" && (
-            <div className="sidebarSection">
-              <div className="sectionTitle">Classification</div>
-              <div className="chips">
-                {TYPE_ORDER.map((t) => (
-                  <div key={t} className={"chip " + (activeTypes.has(t) ? "on" : "")} onClick={() => toggleType(t)} role="button" tabIndex={0}>
-                    <span className="chipIcon"><IconForType type={t} size={14} /></span>
-                    <span>{labelForType(t)}</span>
+            {activeTab === "list" && (
+              <div className="sidebarSection">
+                {filtered.map((e) => (
+                  <div className="gn-card" key={e.id} onClick={() => setFocusTarget({ lat: e.lat, lng: e.lng, zoom: 17 })}>
+                    <div className="card-ip">{e.lat.toFixed(4)}, {e.lng.toFixed(4)}</div>
+                    <div className="card-meta">
+                      <div>{e.title}</div>
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
+        </div>
 
-          {activeTab === "list" && (
-            <div className="sidebarSection">
-              {filtered.map((e) => (
-                <div className="gn-card" key={e.id} onClick={() => setFocusTarget({ lat: e.lat, lng: e.lng, zoom: 17 })}>
-                  <div className="card-labels">
-                    <span className="label-benign">{e.type.toUpperCase()}</span>
-                    <span className="label-hosting">HOSTING</span>
-                  </div>
-                  <div className="card-ip">{e.lat.toFixed(4)}, {e.lng.toFixed(4)}</div>
-                  <div className="card-meta">
-                    <div><strong>TITLE:</strong> {e.title}</div>
-                    <div><strong>LAST SEEN:</strong> 2025-08-31</div>
-                  </div>
-                  <div className="card-tags">
-                    <span className="tag-pill">{e.type}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="opsOverlay">
+          <div style={{ color: "var(--muted)", marginBottom: "4px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>OPS</span>
+            <span style={{ color: backendStatus === "ok" ? "#2ea043" : "#f87171" }}>
+              ● {backendStatus.toUpperCase()} {ping !== null ? `(${ping}ms)` : ""}
+            </span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
+            <button className="miniBtn" style={{ padding: "2px 4px", fontSize: "8px" }} onClick={checkHealth}>Ping</button>
+            <button className="miniBtn" style={{ padding: "2px 4px", fontSize: "8px" }} onClick={clearBoard}>Clear</button>
+          </div>
         </div>
       </div>
 
@@ -232,33 +235,6 @@ export default function App() {
         onClose={() => setAddOpen(false)}
         onCreate={createEntity}
       />
-
-      <div className="opsOverlay" style={{
-        position: "fixed",
-        bottom: "10px",
-        right: "10px",
-        zIndex: 2500,
-        background: "rgba(13,17,23,.8)",
-        border: "1px solid rgba(46,160,67,0.4)",
-        borderRadius: "4px",
-        padding: "6px 10px",
-        backdropFilter: "blur(10px)",
-        width: "180px",
-        pointerEvents: "auto",
-        transition: "transform 0.2s ease",
-        fontSize: "10px"
-      }}>
-        <div style={{ color: "var(--muted)", marginBottom: "4px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>OPS</span>
-          <span style={{ color: backendStatus === "ok" ? "#2ea043" : "#f87171" }}>
-            ● {backendStatus.toUpperCase()} {ping !== null ? `(${ping}ms)` : ""}
-          </span>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
-          <button className="miniBtn" style={{ padding: "2px 4px", fontSize: "9px" }} onClick={checkHealth}>Ping</button>
-          <button className="miniBtn" style={{ padding: "2px 4px", fontSize: "9px" }} onClick={clearBoard}>Clear</button>
-        </div>
-      </div>
     </div>
   );
 }
