@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from "react";
 import MapView from "./components/MapView";
 import AddEntityModal from "./components/AddEntityModal";
 import type { Entity, EntityType } from "./types/entities";
-import { loadEntities, resetEntities, saveEntities, uid } from "./data/storage";
 import { IconForType, labelForType } from "./ui/typeIcons";
 import { fetchPins, postPin, subscribePins } from "./data/liveApi";
 
