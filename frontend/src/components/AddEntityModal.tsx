@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { Entity, EntityType } from "../types/entities";
+import { IconForType } from "../ui/typeIcons";
 
 const TYPES: { type: EntityType; label: string }[] = [
   { type: "incident", label: "Incident" },
@@ -32,16 +33,15 @@ export default function AddEntityModal({
   const [description, setDescription] = useState("");
   const [lat, setLat] = useState<number>(initialLat);
   const [lng, setLng] = useState<number>(initialLng);
-  const [severity, setSeverity] = useState<1 | 2 | 3 | 4 | 5>(2);
+  const [severity, setSeverity] = useState<number>(2);
   const [confidence, setConfidence] = useState<number>(85);
-  const [tags, setTags] = useState<string>("");
+  const [tags, setTags] = useState<string>("corridor, watch, verified");
+  const [link1, setLink1] = useState("");
+  const [img1, setImg1] = useState("");
 
-  // Example device fields
   const [ip, setIp] = useState("");
   const [mac, setMac] = useState("");
   const [hostname, setHostname] = useState("");
-
-  // Example person/org/vehicle
   const [name, setName] = useState("");
   const [alias, setAlias] = useState("");
   const [plate, setPlate] = useState("");
@@ -51,37 +51,18 @@ export default function AddEntityModal({
     setLng(initialLng);
   }, [initialLat, initialLng]);
 
-  // “Expandable” fields
-  const [link1, setLink1] = useState("");
-  const [img1, setImg1] = useState("");
+  if (!open) return null;
 
   const isIntelType = type !== "incident" && type !== "note";
 
-  const showDevice = type === "device";
-  const showPerson = type === "person" || type === "suspect";
-  const showOrg = type === "org";
-  const showVehicle = type === "vehicle";
-  const showArticle = type === "article";
-  const showLocation = type === "location";
-  const showEvidence = type === "evidence";
-
-  const typeLabel = useMemo(() => TYPES.find(t => t.type === type)?.label ?? type, [type]);
-
-  if (!open) return null;
-
   function submit() {
-    if (!lat || !lng) {
-      alert("Please place the entity on the map or enter coordinates.");
-      return;
-    }
-
     const links = [link1.trim()].filter(Boolean);
     const imageUrls = [img1.trim()].filter(Boolean);
 
     const base: any = {
       type,
-      title: title.trim() || `${typeLabel} Entry`,
-      description: description.trim() || "(no description)",
+      title: title.trim(),
+      description: description.trim(),
       lat: Number(lat),
       lng: Number(lng),
       tags: tags.split(",").map(s => s.trim()).filter(Boolean),
@@ -92,49 +73,13 @@ export default function AddEntityModal({
       imageUrls: imageUrls.length ? imageUrls : undefined,
     };
 
-    if (type === "incident") {
-      base.severity = severity;
-    } else if (isIntelType) {
-      base.confidence = confidence;
-    }
+    if (type === "incident") base.severity = severity;
+    else if (isIntelType) base.confidence = confidence;
 
-    // Attach structured fields by type
-    if (showDevice) {
-      base.device = {
-        hostname: hostname.trim() || undefined,
-        ip: ip.trim() || undefined,
-        mac: mac.trim() || undefined,
-        vendor: undefined,
-        notes: undefined,
-      };
-    }
-
-    if (showPerson) {
-      base.person = {
-        name: name.trim() || undefined,
-        alias: alias.trim() || undefined,
-      };
-    }
-
-    if (showOrg) {
-      base.org = { name: name.trim() || undefined };
-    }
-
-    if (showVehicle) {
-      base.vehicle = { plate: plate.trim() || undefined };
-    }
-
-    if (showArticle) {
-      base.article = { url: link1.trim() || undefined };
-    }
-
-    if (showLocation) {
-      base.location = { placeName: title.trim() || undefined };
-    }
-
-    if (showEvidence) {
-      base.evidence = { kind: "file", fileUrl: link1.trim() || undefined };
-    }
+    if (type === "device") base.device = { hostname, ip, mac };
+    if (type === "person" || type === "suspect") base.person = { name, alias };
+    if (type === "org") base.org = { name };
+    if (type === "vehicle") base.vehicle = { plate };
 
     onCreate(base);
   }
@@ -144,7 +89,22 @@ export default function AddEntityModal({
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modalHeader">
           <div className="modalTitle">Add Entry</div>
-          <button className="btn" onClick={onClose}>Close</button>
+          <button className="btn" onClick={onClose} style={{ fontSize: '12px', padding: '4px 12px' }}>Close</button>
+        </div>
+
+        <div className="chips" style={{ marginBottom: "20px" }}>
+          {TYPES.map((t) => (
+            <div
+              key={t.type}
+              className={"chip " + (type === t.type ? "on" : "")}
+              onClick={() => setType(t.type)}
+              role="button"
+              style={{ padding: "8px 12px", fontSize: "11px", display: "flex", alignItems: "center", gap: "6px" }}
+            >
+              <IconForType type={t.type} size={14} />
+              {t.label}
+            </div>
+          ))}
         </div>
 
         <div className="grid2">
@@ -158,29 +118,16 @@ export default function AddEntityModal({
           {type === "incident" ? (
             <label className="field">
               <div className="label">Severity</div>
-              <select className="input" value={severity} onChange={(e) => setSeverity(Number(e.target.value) as any)}>
-                <option value={1}>1 (low)</option>
-                <option value={2}>2</option>
-                <option value={3}>3</option>
-                <option value={4}>4</option>
-                <option value={5}>5 (high)</option>
+              <select className="input" value={severity} onChange={(e) => setSeverity(Number(e.target.value))}>
+                {[1, 2, 3, 4, 5].map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             </label>
           ) : isIntelType ? (
             <label className="field">
               <div className="label">Confidence (%)</div>
-              <input
-                type="number"
-                className="input"
-                min={0}
-                max={100}
-                value={confidence}
-                onChange={(e) => setConfidence(Number(e.target.value))}
-              />
+              <input type="number" className="input" min={0} max={100} value={confidence} onChange={(e) => setConfidence(Number(e.target.value))} />
             </label>
-          ) : (
-            <div className="field" />
-          )}
+          ) : <div className="field" />}
         </div>
 
         <label className="field">
@@ -206,7 +153,7 @@ export default function AddEntityModal({
 
         <label className="field">
           <div className="label">Tags (comma-separated)</div>
-          <input className="input" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="corridor, watch, verified" />
+          <input className="input" value={tags} onChange={(e) => setTags(e.target.value)} />
         </label>
 
         <div className="grid2">
@@ -220,54 +167,35 @@ export default function AddEntityModal({
           </label>
         </div>
 
-        {showDevice && (
+        {(type === "device") && (
           <div className="block">
-            <div className="blockTitle">Device metadata (optional)</div>
-            <div className="grid3">
-              <label className="field">
-                <div className="label">Hostname</div>
-                <input className="input" value={hostname} onChange={(e) => setHostname(e.target.value)} />
-              </label>
-              <label className="field">
-                <div className="label">IP</div>
-                <input className="input" value={ip} onChange={(e) => setIp(e.target.value)} />
-              </label>
-              <label className="field">
-                <div className="label">MAC</div>
-                <input className="input" value={mac} onChange={(e) => setMac(e.target.value)} />
-              </label>
-            </div>
-          </div>
-        )}
-
-        {showPerson && (
-          <div className="block">
-            <div className="blockTitle">Person metadata (optional)</div>
+            <div className="blockTitle">Device Details</div>
             <div className="grid2">
-              <label className="field">
-                <div className="label">Name</div>
-                <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
-              </label>
-              <label className="field">
-                <div className="label">Alias</div>
-                <input className="input" value={alias} onChange={(e) => setAlias(e.target.value)} />
-              </label>
+              <input className="input" placeholder="IP Address" value={ip} onChange={(e) => setIp(e.target.value)} />
+              <input className="input" placeholder="MAC Address" value={mac} onChange={(e) => setMac(e.target.value)} />
             </div>
           </div>
         )}
 
-        {showVehicle && (
+        {(type === "person" || type === "suspect") && (
           <div className="block">
-            <div className="blockTitle">Vehicle metadata (optional)</div>
-            <label className="field">
-              <div className="label">Plate</div>
-              <input className="input" value={plate} onChange={(e) => setPlate(e.target.value)} />
-            </label>
+            <div className="blockTitle">Individual Details</div>
+            <div className="grid2">
+              <input className="input" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+              <input className="input" placeholder="Alias" value={alias} onChange={(e) => setAlias(e.target.value)} />
+            </div>
+          </div>
+        )}
+
+        {type === "vehicle" && (
+          <div className="block">
+            <div className="blockTitle">Vehicle Details</div>
+            <input className="input" placeholder="License Plate" value={plate} onChange={(e) => setPlate(e.target.value)} />
           </div>
         )}
 
         <div className="modalFooter">
-          <button className="btn" onClick={submit}>Create</button>
+          <button className="btn" onClick={submit} style={{ background: "rgba(46,160,67,0.2)", border: "1px solid #2ea043", color: "#fff", padding: "8px 20px", borderRadius: "8px" }}>Create</button>
         </div>
       </div>
     </div>
