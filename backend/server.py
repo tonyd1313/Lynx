@@ -31,6 +31,8 @@ def create_pin(pin: Dict[str, Any]):
     pin.setdefault("id", f"pin-{int(time.time()*1000)}")
     pin.setdefault("createdAt", int(time.time()))
     PINS.append(pin)
+    # Broadcast to all listeners (simplified for shim)
+    # In a real app, we'd use a more robust pub/sub
     return pin
 
 @app.get("/api/pins/stream")

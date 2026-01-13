@@ -4,6 +4,7 @@ import AddEntityModal from "./components/AddEntityModal";
 import type { Entity, EntityType } from "./types/entities";
 import { loadEntities, resetEntities, saveEntities, uid } from "./data/storage";
 import { IconForType, labelForType } from "./ui/typeIcons";
+import { fetchPins, postPin, subscribePins } from "./data/liveApi";
 
 const TYPE_ORDER: EntityType[] = [
   "incident","suspect","person","org","vehicle","device","evidence","article","location","note"
@@ -12,7 +13,7 @@ const TYPE_ORDER: EntityType[] = [
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const [entities, setEntities] = useState<Entity[]>(() => loadEntities());
+  const [entities, setEntities] = useState<Entity[]>([]);
   const [activeTypes, setActiveTypes] = useState<Set<EntityType>>(() => new Set(TYPE_ORDER));
 
   const [focusTarget, setFocusTarget] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
@@ -39,19 +40,41 @@ export default function App() {
   const [backendStatus, setBackendStatus] = useState<"ok" | "down" | "checking">("checking");
   const [ping, setPing] = useState<number | null>(null);
 
+  useEffect(() => {
+    // Initial fetch
+    fetchPins().then(setEntities).catch(console.error);
+
+    // Subscribe to SSE
+    const unsubscribe = subscribePins((payload: any) => {
+      if (payload.pins) {
+        setEntities(payload.pins);
+      } else if (payload.id) {
+        // Single pin update
+        setEntities(prev => {
+          const exists = prev.find(p => p.id === payload.id);
+          if (exists) return prev.map(p => p.id === payload.id ? payload : p);
+          return [payload, ...prev];
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   function refreshToSeed() {
-    const seed = resetEntities();
-    setEntities(seed);
+    fetchPins().then(setEntities).catch(console.error);
   }
 
-  function createEntity(base: Omit<Entity, "id">) {
-    const newEntity: Entity = { ...base, id: uid(base.type) };
-    const next = [newEntity, ...entities];
-    setEntities(next);
-    saveEntities(next);
-    setAddOpen(false);
-    setSidebarOpen(true);
-    setFocusTarget({ lat: newEntity.lat, lng: newEntity.lng, zoom: 17 });
+  async function createEntity(base: Omit<Entity, "id">) {
+    try {
+      const newEntity = await postPin(base);
+      setEntities(prev => [newEntity, ...prev]);
+      setAddOpen(false);
+      setSidebarOpen(true);
+      setFocusTarget({ lat: newEntity.lat, lng: newEntity.lng, zoom: 17 });
+    } catch (err) {
+      console.error("Failed to post pin:", err);
+    }
   }
 
   async function checkHealth() {
@@ -78,8 +101,8 @@ export default function App() {
 
   function clearBoard() {
     if (confirm("Clear the board? Unsaved changes will be lost.")) {
+      // In a real app we might call a DELETE /api/pins
       setEntities([]);
-      saveEntities([]);
       setFocusTarget(null);
     }
   }
