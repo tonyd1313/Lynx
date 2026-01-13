@@ -143,14 +143,10 @@ export default function App() {
       </div>
 
       <div className="gn-search-container">
-        <div className="gn-search-box" style={{ 
-          background: "rgba(13,17,23,0.8)", 
-          border: "1px solid rgba(46,160,67,0.4)",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.5), 0 0 10px rgba(46,160,67,0.1)"
-        }}>
+        <div className="gn-search-box">
           <span className="search-icon">🔍</span>
           <input type="text" placeholder='Search threats, IPs, tags...' />
-          <span className="shortcut-hint" style={{ background: "rgba(46,160,67,0.1)", color: "#2ea043", border: "1px solid rgba(46,160,67,0.2)" }}>⌘ K</span>
+          <span className="shortcut-hint">⌘ K</span>
         </div>
       </div>
 
@@ -161,30 +157,21 @@ export default function App() {
           onMapPick={(lat, lng) => setDraftLatLng({ lat, lng })}
         />
         
-        <div className="headerActions" style={{ 
-          position: "absolute", 
-          top: "10px", 
-          left: "10px", 
-          zIndex: 2500,
-          display: "flex",
-          gap: "6px"
-        }}>
+        <div className="headerActions">
             <button className="btn" onClick={refreshToSeed}>Refresh</button>
             <button className="btn" onClick={() => setAddOpen(true)} style={{ background: "rgba(46,160,67,0.2)", borderColor: "rgba(46,160,67,0.4)", color: "#fff" }}>Add Pin</button>
-            <button className="btn" onClick={() => setSidebarOpen(v => !v)}>
-              Panel
-            </button>
+            <button className="btn" onClick={() => setSidebarOpen(v => !v)}>Panel</button>
         </div>
 
         <div className={"sidebar " + (sidebarOpen ? "open" : "")}>
           <div className="sidebarInner">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-              <div className="results-count" style={{ fontSize: "10px" }}>{filtered.length} Results</div>
-              <button className="miniBtn" onClick={() => setSidebarOpen(false)} style={{ padding: "1px 4px" }}>✕</button>
+              <div className="results-count">{filtered.length} Results</div>
+              <button className="miniBtn" onClick={() => setSidebarOpen(false)}>✕</button>
             </div>
-            <div className="sidebarTabs" style={{ display: "flex", gap: "4px", marginBottom: "8px", borderBottom: "1px solid var(--stroke)", paddingBottom: "4px" }}>
-              <button className="miniBtn" onClick={() => setActiveTab("list")} style={{ flex: 1, fontSize: "9px", background: activeTab === "list" ? "rgba(46,160,67,.15)" : "transparent" }}>List</button>
-              <button className="miniBtn" onClick={() => setActiveTab("filters")} style={{ flex: 1, fontSize: "9px", background: activeTab === "filters" ? "rgba(46,160,67,.15)" : "transparent" }}>Filters</button>
+            <div className="sidebarTabs">
+              <button className="miniBtn" onClick={() => setActiveTab("list")} style={{ flex: 1, background: activeTab === "list" ? "rgba(46,160,67,.15)" : "transparent" }}>List</button>
+              <button className="miniBtn" onClick={() => setActiveTab("filters")} style={{ flex: 1, background: activeTab === "filters" ? "rgba(46,160,67,.15)" : "transparent" }}>Filters</button>
             </div>
 
             {activeTab === "filters" && (
@@ -214,16 +201,18 @@ export default function App() {
           </div>
         </div>
 
-        <div className="opsOverlay">
-          <div style={{ color: "var(--muted)", marginBottom: "4px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>OPS</span>
+        <div className="opsPanel">
+          <div className="opsHeader">
+            <span>OPERATIONAL CONTROLS</span>
             <span style={{ color: backendStatus === "ok" ? "#2ea043" : "#f87171" }}>
               ● {backendStatus.toUpperCase()} {ping !== null ? `(${ping}ms)` : ""}
             </span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px" }}>
-            <button className="miniBtn" style={{ padding: "2px 4px", fontSize: "8px" }} onClick={checkHealth}>Ping</button>
-            <button className="miniBtn" style={{ padding: "2px 4px", fontSize: "8px" }} onClick={clearBoard}>Clear</button>
+          <div className="opsGrid">
+            <button className="opsBtn">Dark / Light</button>
+            <button className="opsBtn" onClick={checkHealth}>Ping App</button>
+            <button className="opsBtn">Save Investigation</button>
+            <button className="opsBtn" onClick={clearBoard}>Clear Board</button>
           </div>
         </div>
       </div>
