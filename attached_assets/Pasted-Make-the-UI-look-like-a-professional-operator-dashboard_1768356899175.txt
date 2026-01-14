@@ -1,0 +1,178 @@
+Make the UI look like a professional operator dashboard, keep the same menu setup/config, and fix all button functionality exactly as labeled. Also make LYNX OPS smaller and positioned inside the map cleanly.
+
+⸻
+
+1) LYNX OPS Panel — Make it Smaller and Map-Anchored
+
+Required changes
+	•	LYNX OPS must be a compact “map overlay” panel (not a huge floating card).
+	•	It must stay inside the map container (not covering major map area).
+	•	Default position: bottom-right inside map with safe padding.
+	•	Must not overlap Leaflet controls (zoom/layers) or the Replit badge.
+	•	Must be responsive for iPad/tablet.
+
+Layout spec (exact)
+	•	Panel width: min(320px, 92vw)
+	•	Panel padding: 12px
+	•	Border radius: 16px
+	•	Use 2-column grid for buttons:
+	•	2 columns on desktop/tablet
+	•	1 column on very small width
+	•	Button height: 38–42px
+	•	Header row: small title “LYNX OPS” + tiny status indicator dot
+	•	Status text: small, stacked: backend path, status, pin count
+
+Visual spec (keep your aesthetic)
+	•	Glass/dark panel, subtle border, very light shadow
+	•	Keep “operator” vibe: clean spacing, consistent button style
+	•	Consistent type scale (no huge text)
+
+⸻
+
+2) Fix Button Functions to Match Labels (No Fake Buttons)
+
+Replace “Wipe” with two actions:
+	•	Save Investigation
+	•	Clear Board
+
+Keep “Force Refresh”, “Ping API”, and “Dark” but ensure they perform correct actions.
+
+Button behavior mapping (MUST implement)
+
+A) Dark
+	•	If this button is meant to toggle UI theme:
+	•	Toggle global theme class (dark/light) and persist in localStorage.
+	•	If map theme is controlled separately by Leaflet layer switcher:
+	•	Dark button should still only control UI theme; do NOT break map layers.
+
+B) Ping API
+	•	Call backend health endpoint (example):
+	•	GET /api/health (or whatever your backend uses)
+	•	Show:
+	•	status: ok/down
+	•	latency in ms (measured client-side)
+	•	Update the “Status” line in LYNX OPS accordingly.
+
+C) Force Refresh
+	•	Must trigger a real data refresh:
+	•	re-fetch entities/pins from backend: GET /api/entities (or your list endpoint)
+	•	Must update:
+	•	sidebar list
+	•	map pins
+	•	pin count indicator in LYNX OPS
+
+D) Save Investigation (replaces Wipe)
+	•	Saves the current board state.
+	•	Minimum snapshot content:
+	•	entities list (pins)
+	•	current filters state
+	•	map center + zoom (optional but ideal)
+	•	timestamp + name
+	•	Storage:
+	•	localStorage is acceptable for now (fast path)
+	•	If backend exists: POST /api/investigations preferred
+	•	UI response:
+	•	toast notification “Saved investigation”
+	•	optionally show “Last saved: {time}”
+
+E) Clear Board
+	•	Clears the board entities from UI immediately.
+	•	If backend exists:
+	•	either call delete endpoint or keep it local-only but must reset state cleanly.
+	•	Must:
+	•	remove pins from map
+	•	clear sidebar list
+	•	reset pin count to 0
+	•	Must request confirmation:
+	•	“Clear board? This removes current pins from workspace.”
+
+⸻
+
+3) Keep All UI Elements Visible + Non-Overlapping (Critical)
+
+Must fix these overlap issues:
+	•	Leaflet zoom + layer toggles must not be covered by panels.
+	•	Left controls (Refresh / Add Pin / Panel) must remain readable and not collide with sidebar box.
+	•	LYNX OPS must not cover the Leaflet layer picker.
+	•	Replit badge must remain visible and not cover buttons (or move LYNX OPS above it).
+
+Implementation requirement
+
+Add a simple layout safe-zone system:
+	•	Define map overlay regions:
+	•	Top-left: quick action buttons
+	•	Top-center: search
+	•	Bottom-right: LYNX OPS
+	•	Ensure each overlay has a z-index system:
+	•	Leaflet controls: baseline
+	•	overlays: above map but below modals
+	•	modals: highest
+
+⸻
+
+4) Upgrade UI With Professional Elements (Keep Same Setup)
+
+Without changing your menu/config, add these UI enhancements:
+
+A) Search Bar Improvements
+	•	Add clear (“x”) button
+	•	Add subtle hint text (“Search threats, IPs, tags…” already good)
+	•	Add keyboard shortcut display (⌘K) stays
+
+B) Sidebar Results Panel
+	•	“0 Results” should be styled like a compact header
+	•	List/Filters tabs should look like real segmented control
+	•	Add empty state:
+	•	“No pins yet. Click Add Pin to start.”
+
+C) Pin Controls
+	•	Make Add Pin button primary
+	•	Add optional “Add Pin” hotkey: A
+
+D) Status Strip (Optional but high value)
+
+Inside LYNX OPS, show:
+	•	Backend: /api
+	•	Status: ok/down
+	•	Pins: count
+	•	Last refresh: timestamp
+
+⸻
+
+5) Files to Change (Expected)
+
+You must implement this by editing the actual UI + wiring, likely in:
+	•	frontend/src/components/MapView.tsx
+	•	frontend/src/App.tsx
+	•	frontend/src/lynx_ops_overlay.ts or equivalent
+	•	frontend/src/lynx_hotfix.css / lynx_ui_patch.css (wherever overlay styles live)
+	•	any state handler file like frontend/src/data/liveApi.ts or api.ts
+
+If there is already button wiring in frontend/src/button_wiring.ts, use that as the single source of truth.
+
+⸻
+
+6) Acceptance Tests (Must pass)
+	•	LYNX OPS is smaller and fully inside map, bottom-right, not blocking Leaflet controls.
+	•	All buttons perform real behavior matching label.
+	•	No overlap on iPad/tablet view; all controls visible.
+	•	Save Investigation creates a retrievable saved state in localStorage or backend.
+	•	Clear Board clears UI state correctly and confirms before clearing.
+	•	Ping API shows backend health correctly.
+	•	Force Refresh reloads entities and updates map + sidebar.
+
+⸻
+
+Quick note based on your screenshot
+
+You currently have:
+	•	“Dark”
+	•	“Wipe”
+	•	“Ping API”
+	•	“Force Refresh”
+
+Replace Wipe with:
+	•	Save Investigation
+	•	Clear Board
+
+…and shrink panel + regrid buttons so it looks like a real operator console, not a huge overlay.

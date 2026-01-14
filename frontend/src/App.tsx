@@ -19,6 +19,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"list" | "filters">("list");
   const [backendStatus, setBackendStatus] = useState<"ok" | "down" | "checking">("checking");
   const [ping, setPing] = useState<number | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<string>(new Date().toLocaleTimeString());
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    return (localStorage.getItem("lynx_theme") as "dark" | "light") || "dark";
+  });
 
   const filtered = useMemo(() => {
     return entities.filter(e => activeTypes.has(e.type));
@@ -32,6 +36,11 @@ export default function App() {
       return next;
     });
   }
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("lynx_theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     fetchPins().then(setEntities).catch(console.error);
@@ -50,6 +59,7 @@ export default function App() {
   }, []);
 
   function refreshToSeed() {
+    setLastRefresh(new Date().toLocaleTimeString());
     fetchPins().then(setEntities).catch(console.error);
   }
 
@@ -84,26 +94,41 @@ export default function App() {
   }
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === "a" && !addOpen && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+        setAddOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [addOpen]);
+
+  useEffect(() => {
     checkHealth();
   }, []);
 
   function clearBoard() {
-    if (confirm("Clear the board? Unsaved changes will be lost.")) {
+    if (confirm("Clear board? This removes current pins from workspace.")) {
       setEntities([]);
       setFocusTarget(null);
     }
   }
 
+  function saveInvestigation() {
+    const snapshot = {
+      entities,
+      activeTypes: Array.from(activeTypes),
+      timestamp: new Date().toISOString()
+    };
+    localStorage.setItem("lynx_investigation", JSON.stringify(snapshot));
+    alert("Investigation saved to local storage.");
+  }
+
+  const [search, setSearch] = useState("");
+
   return (
-    <div className="app">
-      <div className="stars-container" style={{
-        position: "absolute",
-        inset: 0,
-        zIndex: 0,
-        overflow: "hidden",
-        background: "radial-gradient(circle at center, #111 0%, #000 100%)",
-        pointerEvents: "none"
-      }}>
+    <div className={`app ${theme}`}>
+      <div className="stars-container">
         {[...Array(100)].map((_, i) => (
           <div key={i} className="star" style={{
             position: "absolute",
@@ -122,9 +147,9 @@ export default function App() {
 
       <div className="gn-header">
         <div className="gn-nav-left">
-          <div className="gn-logo" style={{ color: "#2ea043" }}>
+          <div className="gn-logo">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-            <span style={{ fontWeight: "bold", letterSpacing: "1px" }}>OPAL C2</span>
+            <span>OPAL C2</span>
           </div>
           <nav className="gn-links">
             <a href="#" className="active">OPERATIONS</a>
@@ -135,17 +160,23 @@ export default function App() {
         </div>
         <div className="gn-nav-right">
           <div style={{ textAlign: "right", marginRight: "12px" }}>
-            <div className="user-email" style={{ fontSize: "12px", lineHeight: "1.2" }}>TONY DRUMRIGHT</div>
-            <div style={{ fontSize: "10px", color: "var(--muted)" }}>tonydrumright5@gmail.com</div>
+            <div className="user-email">TONY DRUMRIGHT</div>
+            <div className="user-email-muted">tonydrumright5@gmail.com</div>
           </div>
-          <div className="user-avatar" style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#2ea043", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: "bold" }}>T</div>
+          <div className="user-avatar">T</div>
         </div>
       </div>
 
       <div className="gn-search-container">
         <div className="gn-search-box">
           <span className="search-icon">🔍</span>
-          <input type="text" placeholder='Search threats, IPs, tags...' />
+          <input 
+            type="text" 
+            placeholder='Search threats, IPs, tags...' 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && <span className="clear-search" onClick={() => setSearch("")} style={{ cursor: 'pointer', padding: '0 8px', color: 'var(--muted)' }}>✕</span>}
           <span className="shortcut-hint">⌘ K</span>
         </div>
       </div>
@@ -159,13 +190,13 @@ export default function App() {
         
         <div className="headerActions">
             <button className="btn" onClick={refreshToSeed}>Refresh</button>
-            <button className="btn" onClick={() => setAddOpen(true)} style={{ background: "rgba(46,160,67,0.2)", borderColor: "rgba(46,160,67,0.4)", color: "#fff" }}>Add Pin</button>
+            <button className="btn btn-primary" onClick={() => setAddOpen(true)}>Add Pin</button>
             <button className="btn" onClick={() => setSidebarOpen(v => !v)}>Panel</button>
         </div>
 
         <div className={"sidebar " + (sidebarOpen ? "open" : "")}>
           <div className="sidebarInner">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+            <div className="sidebarHeader">
               <div className="results-count">{filtered.length} Results</div>
               <button className="miniBtn" onClick={() => setSidebarOpen(false)}>✕</button>
             </div>
@@ -188,14 +219,18 @@ export default function App() {
 
             {activeTab === "list" && (
               <div className="sidebarSection">
-                {filtered.map((e) => (
-                  <div className="gn-card" key={e.id} onClick={() => setFocusTarget({ lat: e.lat, lng: e.lng, zoom: 17 })}>
-                    <div className="card-ip">{e.lat.toFixed(4)}, {e.lng.toFixed(4)}</div>
-                    <div className="card-meta">
-                      <div>{e.title}</div>
+                {filtered.length === 0 ? (
+                  <div className="empty-state">No pins yet. Click Add Pin to start.</div>
+                ) : (
+                  filtered.map((e) => (
+                    <div className="gn-card" key={e.id} onClick={() => setFocusTarget({ lat: e.lat, lng: e.lng, zoom: 17 })}>
+                      <div className="card-ip">{e.lat.toFixed(4)}, {e.lng.toFixed(4)}</div>
+                      <div className="card-meta">
+                        <div>{e.title}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -203,16 +238,25 @@ export default function App() {
 
         <div className="opsPanel">
           <div className="opsHeader">
-            <span>OPERATIONAL CONTROLS</span>
-            <span style={{ color: backendStatus === "ok" ? "#2ea043" : "#f87171" }}>
-              ● {backendStatus.toUpperCase()} {ping !== null ? `(${ping}ms)` : ""}
-            </span>
+            <div className="opsTitle">
+              <span className={`status-dot ${backendStatus}`}></span>
+              LYNX OPS
+            </div>
+            <div className="opsStatusGroup">
+              <div>Backend: /api</div>
+              <div>Status: {backendStatus} {ping !== null ? `(${ping}ms)` : ""}</div>
+              <div>Pins: {entities.length}</div>
+              <div>Refresh: {lastRefresh}</div>
+            </div>
           </div>
           <div className="opsGrid">
-            <button className="opsBtn">Dark / Light</button>
-            <button className="opsBtn" onClick={checkHealth}>Ping App</button>
-            <button className="opsBtn">Save Investigation</button>
+            <button className="opsBtn" onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}>
+              {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+            </button>
+            <button className="opsBtn" onClick={checkHealth}>Ping API</button>
+            <button className="opsBtn" onClick={saveInvestigation}>Save Investigation</button>
             <button className="opsBtn" onClick={clearBoard}>Clear Board</button>
+            <button className="opsBtn" style={{ gridColumn: "span 2" }} onClick={refreshToSeed}>Force Refresh</button>
           </div>
         </div>
       </div>
