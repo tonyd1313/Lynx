@@ -236,7 +236,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="opsPanel">
+        <div className="opsPanel" data-lynx-ops="1">
           <div className="opsHeader">
             <div className="opsTitle">
               <span className={`status-dot ${backendStatus}`}></span>
